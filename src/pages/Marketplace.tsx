@@ -145,20 +145,30 @@ const Marketplace = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-8 pb-8">
                     <div className="join">
                         <button
                             className="join-item btn"
                             disabled={page === 1}
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            onClick={() => {
+                                setPage(p => Math.max(1, p - 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
                         >
                             «
                         </button>
-                        <button className="join-item btn">Page {page} of {totalPages}</button>
+                        <button className="join-item btn pointer-events-none">
+                            {i18n.language === 'zh'
+                                ? `第 ${page} 页 / 共 ${totalPages} 页`
+                                : `Page ${page} of ${totalPages}`}
+                        </button>
                         <button
                             className="join-item btn"
                             disabled={page === totalPages}
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            onClick={() => {
+                                setPage(p => Math.min(totalPages, p + 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
                         >
                             »
                         </button>

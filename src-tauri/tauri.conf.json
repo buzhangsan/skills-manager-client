@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
   "productName": "Skill Manager",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "identifier": "com.skillmanager.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:5174",
-    "beforeBuildCommand": "",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "bundle": {
@@ -22,7 +22,10 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "nsis": {
+        "installMode": "currentUser"
+      }
     },
     "macOS": {
       "entitlements": null,
