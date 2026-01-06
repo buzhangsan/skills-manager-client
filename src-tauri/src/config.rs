@@ -129,17 +129,17 @@ impl Config {
 }
 
 pub fn get_system_skill_path() -> PathBuf {
-    // 使用 .skills-manager/skills 而不是 .claude/skills
+    // 使用 .claude/skills（Claude Code 标准路径）
     let home = dirs::home_dir().expect("Failed to get home directory");
-    home.join(".skills-manager").join("skills")
+    home.join(".claude").join("skills")
 }
 
 pub fn get_default_install_path() -> Result<PathBuf> {
     let config = Config::load()?;
     if config.default_install_location == "project" {
         if let Some(project_path) = config.default_project_path {
-            // 项目级仍然使用 .skills-manager/skills
-            let path = PathBuf::from(project_path).join(".skills-manager").join("skills");
+            // 项目级使用项目目录下的 .claude/skills
+            let path = PathBuf::from(project_path).join(".claude").join("skills");
             return Ok(path);
         }
     }
