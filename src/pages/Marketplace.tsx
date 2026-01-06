@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSkillStore } from '../store/useSkillStore';
 import { Download, Search, Star, ExternalLink, Check } from 'lucide-react';
+import { getLocalizedDescription } from '../utils/i18n';
 
 const Marketplace = () => {
+  const { t, i18n } = useTranslation();
   const { marketplaceSkills, fetchMarketplaceSkills, installSkill, installedSkills, isLoading } = useSkillStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+  const [installingSkillId, setInstallingSkillId] = useState<string | null>(null);
   const pageSize = 12;
 
   useEffect(() => {
@@ -13,6 +17,24 @@ const Marketplace = () => {
         fetchMarketplaceSkills();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleInstall = async (skill: any) => {
+    if (installingSkillId) return;
+
+    setInstallingSkillId(skill.id);
+    try {
+        await installSkill(skill);
+        alert(i18n.language === 'zh'
+            ? `${skill.name} 安装成功！安全扫描已通过。`
+            : `${skill.name} installed successfully! Security scan passed.`);
+    } catch (error: any) {
+        alert(i18n.language === 'zh'
+            ? `安装失败: ${error.message}`
+            : `Installation failed: ${error.message}`);
+    } finally {
+        setInstallingSkillId(null);
+    }
+  };
 
   const isInstalled = (skillId: string) => {
     return installedSkills.some(s => s.id === skillId);
@@ -31,15 +53,19 @@ const Marketplace = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-            <h2 className="text-2xl font-bold">Skill 市场</h2>
-            <p className="text-base-content/60">发现并安装社区贡献的 Claude Skills</p>
+            <h2 className="text-2xl font-bold">{t('marketplace')}</h2>
+            <p className="text-base-content/60">
+              {i18n.language === 'zh'
+                ? '发现并安装社区贡献的 Claude Skills'
+                : 'Discover and install community-contributed Claude Skills'}
+            </p>
         </div>
 
         <div className="join w-full md:w-auto">
           <div className="relative w-full md:w-64">
              <input
                 className="input input-bordered join-item w-full"
-                placeholder="搜索 Skills..."
+                placeholder={t('searchSkills')}
                 value={searchTerm}
                 onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -78,8 +104,8 @@ const Marketplace = () => {
                                     </div>
                                 </div>
                                 <h3 className="card-title text-lg">{skill.name}</h3>
-                                <p className="text-sm text-base-content/70 line-clamp-3 mb-4 flex-1" title={skill.description}>
-                                    {skill.description}
+                                <p className="text-sm text-base-content/70 line-clamp-3 mb-4 flex-1" title={getLocalizedDescription(skill, i18n.language)}>
+                                    {getLocalizedDescription(skill, i18n.language)}
                                 </p>
 
                                 <div className="card-actions justify-between items-center mt-auto pt-4 border-t border-base-200">
@@ -89,19 +115,25 @@ const Marketplace = () => {
                                         rel="noopener noreferrer"
                                         className="btn btn-ghost btn-xs gap-1 text-base-content/50"
                                     >
-                                        <ExternalLink size={12} /> 源码
+                                        <ExternalLink size={12} /> {i18n.language === 'zh' ? '源码' : 'Source'}
                                     </a>
 
                                     {installed ? (
                                         <button className="btn btn-success btn-sm btn-outline gap-2 no-animation cursor-default">
-                                            <Check size={16} /> 已安装
+                                            <Check size={16} /> {t('installed')}
                                         </button>
                                     ) : (
                                         <button
                                             className="btn btn-primary btn-sm gap-2"
-                                            onClick={() => installSkill(skill)}
+                                            onClick={() => handleInstall(skill)}
+                                            disabled={!!installingSkillId}
                                         >
-                                            <Download size={16} /> 安装
+                                            {installingSkillId === skill.id ? (
+                                                <span className="loading loading-spinner loading-xs"></span>
+                                            ) : (
+                                                <Download size={16} />
+                                            )}
+                                            {installingSkillId === skill.id ? (i18n.language === 'zh' ? '安装中...' : 'Installing...') : t('install')}
                                         </button>
                                     )}
                                 </div>

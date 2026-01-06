@@ -1,14 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, LayoutDashboard, Library, ShoppingBag, ShieldCheck, Settings } from 'lucide-react';
+import { Sun, Moon, Library, ShoppingBag, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function Navbar() {
     const location = useLocation();
+    const { t, i18n } = useTranslation();
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-    // Initialize theme from system preference or local storage if implemented
+    // Initialize theme from system preference or local storage
     useEffect(() => {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             setTheme('dark');
         }
     }, []);
@@ -21,26 +26,27 @@ function Navbar() {
         } else {
             document.documentElement.classList.remove('dark');
         }
+        localStorage.setItem('theme', theme);
     }, [theme]);
 
     const navItems = [
-        { path: '/', label: '仪表盘', icon: LayoutDashboard },
-        { path: '/my-skills', label: '我的 Skills', icon: Library },
-        { path: '/marketplace', label: '市场', icon: ShoppingBag },
-        { path: '/security', label: '安全', icon: ShieldCheck },
-        { path: '/settings', label: '设置', icon: Settings },
+        { path: '/my-skills', label: t('mySkills'), icon: Library },
+        { path: '/marketplace', label: t('marketplace'), icon: ShoppingBag },
+        { path: '/settings', label: t('settings'), icon: Settings },
     ];
 
     const isActive = (path: string) => {
-        if (path === '/') {
-            return location.pathname === '/';
-        }
-        return location.pathname.startsWith(path);
+        return location.pathname === path || location.pathname.startsWith(path + '/');
     };
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
+    };
+
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'zh' ? 'en' : 'zh';
+        i18n.changeLanguage(newLang);
     };
 
     return (
@@ -52,7 +58,7 @@ function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo - Left */}
                     <div className="flex items-center">
-                        <Link to="/" className="text-xl font-bold text-gray-900 dark:text-base-content flex items-center gap-2">
+                        <Link to="/my-skills" className="text-xl font-bold text-gray-900 dark:text-base-content flex items-center gap-2">
                             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
                                 S
                             </div>
@@ -79,11 +85,22 @@ function Navbar() {
 
                     {/* Right Actions */}
                     <div className="flex items-center gap-2">
+                        {/* Language Toggle */}
+                        <button
+                            onClick={toggleLanguage}
+                            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-base-200 hover:bg-gray-200 dark:hover:bg-base-100 flex items-center justify-center transition-colors"
+                            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+                        >
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                {i18n.language === 'zh' ? 'EN' : '中'}
+                            </span>
+                        </button>
+
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
                             className="w-10 h-10 rounded-full bg-gray-100 dark:bg-base-200 hover:bg-gray-200 dark:hover:bg-base-100 flex items-center justify-center transition-colors"
-                            title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+                            title={theme === 'light' ? t('dark') : t('light')}
                         >
                             {theme === 'light' ? (
                                 <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />

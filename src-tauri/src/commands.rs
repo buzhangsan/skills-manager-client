@@ -266,3 +266,20 @@ pub struct PerformUpdateRequest {
 pub async fn perform_update(_request: PerformUpdateRequest) -> Result<String, String> {
     Err("Update feature not implemented yet".to_string())
 }
+
+// ===== File Picker =====
+
+#[tauri::command]
+pub async fn select_directory(_app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let task = tokio::task::spawn_blocking(|| {
+        rfd::FileDialog::new()
+            .set_title("Select Directory")
+            .pick_folder()
+    });
+
+    task.await
+        .map_err(|e| e.to_string())?
+        .map(|path| Some(path.to_string_lossy().to_string()))
+        .ok_or_else(|| "No directory selected".to_string())
+        .or(Ok(None))
+}

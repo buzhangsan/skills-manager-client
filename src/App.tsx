@@ -1,9 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
 import MySkills from './pages/MySkills';
 import Marketplace from './pages/Marketplace';
-import Security from './pages/Security';
 import Settings from './pages/Settings';
 
 const router = createBrowserRouter([
@@ -13,7 +11,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Dashboard />,
+        element: <Navigate to="/my-skills" replace />,
       },
       {
         path: 'my-skills',
@@ -24,10 +22,6 @@ const router = createBrowserRouter([
         element: <Marketplace />,
       },
       {
-        path: 'security',
-        element: <Security />,
-      },
-      {
         path: 'settings',
         element: <Settings />,
       },
@@ -35,7 +29,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <Navigate to="/my-skills" replace />,
   }
 ]);
 

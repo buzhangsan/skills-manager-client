@@ -8,17 +8,19 @@ interface SkillStore {
   marketplaceSkills: MarketplaceSkill[];
   isLoading: boolean;
   projectPaths: string[];
+  defaultInstallLocation: 'system' | 'project';
 
   // Actions
   fetchMarketplaceSkills: () => Promise<void>;
   scanLocalSkills: () => Promise<void>;
-  installSkill: (skill: MarketplaceSkill) => void;
+  installSkill: (skill: MarketplaceSkill) => Promise<void>;
   uninstallSkill: (id: string) => void;
   updateSkill: (id: string, skill: Partial<InstalledSkill>) => void;
   importFromGithub: (url: string, installPath?: string) => Promise<void>;
   importFromLocal: (sourcePath: string, installPath?: string) => Promise<void>;
   fetchProjectPaths: () => Promise<void>;
   saveProjectPaths: (paths: string[]) => Promise<void>;
+  setDefaultInstallLocation: (location: 'system' | 'project') => void;
 }
 
 export const useSkillStore = create<SkillStore>()(
@@ -28,6 +30,11 @@ export const useSkillStore = create<SkillStore>()(
       marketplaceSkills: [],
       isLoading: false,
       projectPaths: [],
+      defaultInstallLocation: 'system',
+
+      setDefaultInstallLocation: (location: 'system' | 'project') => {
+        set({ defaultInstallLocation: location });
+      },
 
       fetchMarketplaceSkills: async () => {
         set({ isLoading: true });
@@ -88,19 +95,43 @@ export const useSkillStore = create<SkillStore>()(
         }
       },
 
-      installSkill: (skill: MarketplaceSkill) => {
-        const newSkill: InstalledSkill = {
-          ...skill,
-          installDate: Date.now(),
-          localPath: `C:\\Users\\User\\.claude\\skills\\${skill.name}`,
-          status: 'unknown',
-          type: 'system',
-          version: '1.0.0'
-        };
+      installSkill: async (skill: MarketplaceSkill) => {
+        try {
+          const { defaultInstallLocation, projectPaths } = get();
 
-        set((state) => ({
-          installedSkills: [...state.installedSkills, newSkill]
-        }));
+          // 确定安装路径
+          let installPath = undefined;
+          if (defaultInstallLocation === 'project') {
+            // 如果设置为安装到项目，但没有项目路径，则回退到系统路径
+            if (projectPaths.length > 0) {
+              // 默认使用第一个项目路径
+              installPath = projectPaths[0];
+            } else {
+              console.warn('No project paths configured, installing to system directory');
+            }
+          }
+
+          // 使用 GitHub URL 安装技能
+          const result: any = await invoke('import_github_skill', {
+            request: {
+              repoUrl: skill.githubUrl,
+              installPath,
+              skipSecurityCheck: false // 执行安全检查
+            }
+          });
+
+          if (!result.success || result.blocked) {
+            throw new Error(result.message || 'Installation failed');
+          }
+
+          // 重新扫描本地技能
+          await get().scanLocalSkills();
+
+          return result;
+        } catch (error) {
+          console.error('Install skill failed:', error);
+          throw error;
+        }
       },
 
       uninstallSkill: (id: string) => {

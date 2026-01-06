@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, ShieldCheck, ShieldAlert, CheckCircle, RefreshCw } from 'lucide-react';
 import { useSkillStore } from '../store/useSkillStore';
 
 const Security = () => {
+  const { t, i18n } = useTranslation();
   const { installedSkills } = useSkillStore();
   const [scanning, setScanning] = useState(false);
   const [lastScan, setLastScan] = useState<Date | null>(new Date());
@@ -19,8 +21,14 @@ const Security = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-             <h2 className="text-2xl font-bold">安全中心</h2>
-             <p className="text-base-content/60">扫描并监控您的 Skills 以发现潜在漏洞</p>
+             <h2 className="text-2xl font-bold">
+               {i18n.language === 'zh' ? '安全中心' : 'Security Center'}
+             </h2>
+             <p className="text-base-content/60">
+               {i18n.language === 'zh'
+                 ? '扫描并监控您的 Skills 以发现潜在漏洞'
+                 : 'Scan and monitor your Skills for potential vulnerabilities'}
+             </p>
         </div>
         <button
             className={`btn btn-primary gap-2 ${scanning ? 'loading' : ''}`}
@@ -28,7 +36,7 @@ const Security = () => {
             disabled={scanning}
         >
             {!scanning && <RefreshCw size={18} />}
-            {scanning ? '正在扫描...' : '立即扫描'}
+            {scanning ? t('scanning') : (i18n.language === 'zh' ? '立即扫描' : 'Scan Now')}
         </button>
       </div>
 
@@ -36,40 +44,54 @@ const Security = () => {
         <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body items-center text-center">
                 <ShieldCheck size={48} className="text-success mb-2" />
-                <h3 className="card-title">系统状态</h3>
-                <p className="text-success font-medium">安全</p>
-                <p className="text-xs text-base-content/50">上次扫描: {lastScan?.toLocaleTimeString()}</p>
+                <h3 className="card-title">
+                  {i18n.language === 'zh' ? '系统状态' : 'System Status'}
+                </h3>
+                <p className="text-success font-medium">{t('safe')}</p>
+                <p className="text-xs text-base-content/50">
+                  {i18n.language === 'zh' ? '上次扫描' : 'Last scan'}: {lastScan?.toLocaleTimeString()}
+                </p>
             </div>
         </div>
         <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body items-center text-center">
                 <Shield size={48} className="text-info mb-2" />
-                <h3 className="card-title">已扫描 Skills</h3>
+                <h3 className="card-title">
+                  {i18n.language === 'zh' ? '已扫描 Skills' : 'Scanned Skills'}
+                </h3>
                 <p className="text-2xl font-bold">{installedSkills.length}</p>
-                <p className="text-xs text-base-content/50">总安装数</p>
+                <p className="text-xs text-base-content/50">
+                  {i18n.language === 'zh' ? '总安装数' : 'Total installed'}
+                </p>
             </div>
         </div>
         <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body items-center text-center">
                 <ShieldAlert size={48} className="text-warning mb-2" />
-                <h3 className="card-title">发现风险</h3>
+                <h3 className="card-title">
+                  {i18n.language === 'zh' ? '发现风险' : 'Risks Found'}
+                </h3>
                 <p className="text-2xl font-bold">0</p>
-                <p className="text-xs text-base-content/50">需要处理</p>
+                <p className="text-xs text-base-content/50">
+                  {i18n.language === 'zh' ? '需要处理' : 'Needs attention'}
+                </p>
             </div>
         </div>
       </div>
 
       <div className="card bg-base-100 shadow-sm border border-base-200">
         <div className="card-body">
-            <h3 className="card-title mb-4">扫描结果</h3>
+            <h3 className="card-title mb-4">
+              {i18n.language === 'zh' ? '扫描结果' : 'Scan Results'}
+            </h3>
             <div className="overflow-x-auto">
                 <table className="table">
                     <thead>
                         <tr>
                             <th>Skill</th>
-                            <th>状态</th>
-                            <th>上次检查</th>
-                            <th>详情</th>
+                            <th>{i18n.language === 'zh' ? '状态' : 'Status'}</th>
+                            <th>{i18n.language === 'zh' ? '上次检查' : 'Last Check'}</th>
+                            <th>{i18n.language === 'zh' ? '详情' : 'Details'}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,24 +102,28 @@ const Security = () => {
                                     {skill.status === 'safe' && (
                                         <div className="flex items-center gap-2 text-success">
                                             <CheckCircle size={16} />
-                                            <span>通过</span>
+                                            <span>{i18n.language === 'zh' ? '通过' : 'Passed'}</span>
                                         </div>
                                     )}
                                     {skill.status === 'unsafe' && (
                                         <div className="flex items-center gap-2 text-error">
                                             <ShieldAlert size={16} />
-                                            <span>高风险</span>
+                                            <span>{i18n.language === 'zh' ? '高风险' : 'High Risk'}</span>
                                         </div>
                                     )}
                                     {skill.status === 'unknown' && (
                                         <div className="flex items-center gap-2 text-warning">
                                             <Shield size={16} />
-                                            <span>未验证</span>
+                                            <span>{i18n.language === 'zh' ? '未验证' : 'Unverified'}</span>
                                         </div>
                                     )}
                                 </td>
                                 <td>{new Date().toLocaleDateString()}</td>
-                                <td><button className="btn btn-xs btn-ghost">查看报告</button></td>
+                                <td>
+                                  <button className="btn btn-xs btn-ghost">
+                                    {i18n.language === 'zh' ? '查看报告' : 'View Report'}
+                                  </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

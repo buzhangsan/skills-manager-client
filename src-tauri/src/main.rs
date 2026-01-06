@@ -40,6 +40,8 @@ async fn main() {
             // Update operations
             check_updates,
             perform_update,
+            // File picker
+            select_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,16 +2,7 @@ import { useEffect } from 'react';
 import { useSkillStore } from '../store/useSkillStore';
 import { ShieldAlert, Zap, Box, HardDrive } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const data = [
-  { name: '周一', usage: 40 },
-  { name: '周二', usage: 30 },
-  { name: '周三', usage: 20 },
-  { name: '周四', usage: 27 },
-  { name: '周五', usage: 18 },
-  { name: '周六', usage: 23 },
-  { name: '周日', usage: 34 },
-];
+import { useTranslation } from 'react-i18next';
 
 const StatCard = ({ title, value, icon: Icon, color, desc }: any) => (
   <div className="stats shadow bg-base-100 border border-base-200">
@@ -27,7 +18,27 @@ const StatCard = ({ title, value, icon: Icon, color, desc }: any) => (
 );
 
 const Dashboard = () => {
+  const { t, i18n } = useTranslation();
   const { scanLocalSkills, installedSkills } = useSkillStore();
+
+  // 根据语言切换图表数据
+  const data = i18n.language === 'zh' ? [
+    { name: '周一', usage: 40 },
+    { name: '周二', usage: 30 },
+    { name: '周三', usage: 20 },
+    { name: '周四', usage: 27 },
+    { name: '周五', usage: 18 },
+    { name: '周六', usage: 23 },
+    { name: '周日', usage: 34 },
+  ] : [
+    { name: 'Mon', usage: 40 },
+    { name: 'Tue', usage: 30 },
+    { name: 'Wed', usage: 20 },
+    { name: 'Thu', usage: 27 },
+    { name: 'Fri', usage: 18 },
+    { name: 'Sat', usage: 23 },
+    { name: 'Sun', usage: 34 },
+  ];
 
   useEffect(() => {
     scanLocalSkills();
@@ -40,38 +51,38 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="已安装 Skills"
+          title={t('installedSkills')}
           value={installedSkills.length}
           icon={Zap}
           color="primary"
-          desc="所有已激活的技能"
+          desc={t('allActiveSkills')}
         />
         <StatCard
-          title="系统级"
+          title={t('systemLevel')}
           value={systemSkillsCount}
           icon={HardDrive}
           color="secondary"
-          desc="全局可用"
+          desc={t('globallyAvailable')}
         />
         <StatCard
-          title="项目级"
+          title={t('projectLevel')}
           value={projectSkillsCount}
           icon={Box}
           color="accent"
-          desc="当前项目专用"
+          desc={t('currentProjectOnly')}
         />
         <StatCard
-          title="安全状态"
-          value="安全"
+          title={t('securityStatus')}
+          value={t('safe')}
           icon={ShieldAlert}
           color="success"
-          desc="未发现风险"
+          desc={t('noRisksFound')}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-base-100 p-6 rounded-2xl shadow-sm border border-base-200">
-          <h3 className="font-bold text-lg mb-4">Skill 调用趋势</h3>
+          <h3 className="font-bold text-lg mb-4">{t('skillUsageTrend')}</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data}>
@@ -94,30 +105,46 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-base-100 p-6 rounded-2xl shadow-sm border border-base-200">
-          <h3 className="font-bold text-lg mb-4">最近活动</h3>
+          <h3 className="font-bold text-lg mb-4">{t('recentActivity')}</h3>
           <ul className="steps steps-vertical w-full">
             <li className="step step-primary">
                 <div className="text-left ml-2">
-                    <p className="font-medium">安装了 "Git Commander"</p>
-                    <p className="text-xs text-base-content/60">2 分钟前</p>
+                    <p className="font-medium">
+                      {i18n.language === 'zh' ? '安装了 "Git Commander"' : 'Installed "Git Commander"'}
+                    </p>
+                    <p className="text-xs text-base-content/60">
+                      {i18n.language === 'zh' ? '2 分钟前' : '2 minutes ago'}
+                    </p>
                 </div>
             </li>
             <li className="step step-primary">
                 <div className="text-left ml-2">
-                    <p className="font-medium">更新了 "Web Search"</p>
-                    <p className="text-xs text-base-content/60">2 小时前</p>
+                    <p className="font-medium">
+                      {i18n.language === 'zh' ? '更新了 "Web Search"' : 'Updated "Web Search"'}
+                    </p>
+                    <p className="text-xs text-base-content/60">
+                      {i18n.language === 'zh' ? '2 小时前' : '2 hours ago'}
+                    </p>
                 </div>
             </li>
             <li className="step">
                 <div className="text-left ml-2">
-                    <p className="font-medium">完成安全扫描</p>
-                    <p className="text-xs text-base-content/60">昨天</p>
+                    <p className="font-medium">
+                      {i18n.language === 'zh' ? '完成安全扫描' : 'Security scan completed'}
+                    </p>
+                    <p className="text-xs text-base-content/60">
+                      {i18n.language === 'zh' ? '昨天' : 'Yesterday'}
+                    </p>
                 </div>
             </li>
             <li className="step">
                 <div className="text-left ml-2">
-                    <p className="font-medium">系统自动更新</p>
-                    <p className="text-xs text-base-content/60">3 天前</p>
+                    <p className="font-medium">
+                      {i18n.language === 'zh' ? '系统自动更新' : 'System auto-update'}
+                    </p>
+                    <p className="text-xs text-base-content/60">
+                      {i18n.language === 'zh' ? '3 天前' : '3 days ago'}
+                    </p>
                 </div>
             </li>
           </ul>
