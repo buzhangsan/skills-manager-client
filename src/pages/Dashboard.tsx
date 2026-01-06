@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useSkillStore } from '../store/useSkillStore';
-import { ShieldAlert, Download, Activity, Zap, Box, HardDrive } from 'lucide-react';
+import { ShieldAlert, Zap, Box, HardDrive } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [

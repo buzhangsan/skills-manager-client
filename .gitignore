@@ -31,3 +31,9 @@ src-tauri/target/
 *.mp3
 *.wav
 manus/
+
+# Cargo
+.cargo/
+
+# Batch files
+*.bat

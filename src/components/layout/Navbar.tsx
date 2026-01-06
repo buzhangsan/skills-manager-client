@@ -38,7 +38,7 @@ function Navbar() {
         return location.pathname.startsWith(path);
     };
 
-    const toggleTheme = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
     };
