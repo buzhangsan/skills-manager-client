@@ -168,13 +168,20 @@ const MySkills = () => {
                     </button>
                     <button
                         className="btn btn-sm btn-ghost text-error hover:bg-error/10"
-                        onClick={() => {
+                        onClick={async () => {
                             if(window.confirm(
                               i18n.language === 'zh'
-                                ? `确定要卸载 ${skill.name} 吗?`
-                                : `Are you sure you want to uninstall ${skill.name}?`
+                                ? `确定要卸载 ${skill.name} 吗？这将删除磁盘上的文件。`
+                                : `Are you sure you want to uninstall ${skill.name}? This will delete the files from disk.`
                             )) {
-                                uninstallSkill(skill.id);
+                                try {
+                                    await uninstallSkill(skill.id);
+                                    alert(i18n.language === 'zh' ? '卸载成功！' : 'Uninstalled successfully!');
+                                } catch (error: any) {
+                                    alert(i18n.language === 'zh'
+                                        ? `卸载失败: ${error.message || error}`
+                                        : `Uninstall failed: ${error.message || error}`);
+                                }
                             }
                         }}
                     >

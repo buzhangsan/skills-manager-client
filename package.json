@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tauri-apps/api": "^2.9.1",
+    "@tauri-apps/plugin-shell": "^2.3.3",
     "autoprefixer": "^10.4.23",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",

@@ -156,27 +156,201 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     Ok(())
 }
 
+/// 解析 GitHub URL，提取仓库信息
+/// 支持格式：
+/// - https://github.com/owner/repo
+/// - https://github.com/owner/repo/tree/branch/path/to/dir
+fn parse_github_url(url: &str) -> Result<(String, String, String, Option<String>)> {
+    let url = url.trim_end_matches(".git");
+    let parts: Vec<&str> = url.split('/').collect();
+
+    let github_idx = parts.iter().position(|&p| p == "github.com")
+        .ok_or_else(|| anyhow::anyhow!("Not a GitHub URL"))?;
+
+    if parts.len() < github_idx + 3 {
+        anyhow::bail!("Invalid GitHub URL format");
+    }
+
+    let owner = parts[github_idx + 1].to_string();
+    let repo = parts[github_idx + 2].to_string();
+
+    if parts.len() > github_idx + 4 && parts[github_idx + 3] == "tree" {
+        let branch = parts[github_idx + 4].to_string();
+        let subpath = if parts.len() > github_idx + 5 {
+            Some(parts[github_idx + 5..].join("/"))
+        } else {
+            None
+        };
+        Ok((owner, repo, branch, subpath))
+    } else {
+        Ok((owner, repo, "main".to_string(), None))
+    }
+}
+
 pub fn clone_github_repo(repo_url: &str, target_path: &Path) -> Result<()> {
     use std::process::Command;
+    use std::io::{Read, Write, Cursor};
 
     // 确保目标目录的父目录存在
     if let Some(parent) = target_path.parent() {
         fs::create_dir_all(parent)?;
     }
 
-    // 执行 git clone
-    let output = Command::new("git")
-        .arg("clone")
-        .arg("--depth")
-        .arg("1")
-        .arg(repo_url)
-        .arg(target_path)
-        .output()
-        .context("Failed to execute git clone")?;
+    // 解析 GitHub URL
+    let (owner, repo, branch, subpath) = parse_github_url(repo_url)?;
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("Git clone failed: {}", error);
+    // 如果有子路径，下载 zip 并提取
+    if let Some(ref path) = subpath {
+        // 使用 reqwest 下载 zip (blocking 模式)
+        let zip_url = format!(
+            "https://github.com/{}/{}/archive/refs/heads/{}.zip",
+            owner, repo, branch
+        );
+
+        eprintln!("Downloading from: {}", zip_url);
+
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(120))
+            .build()
+            .context("Failed to create HTTP client")?;
+
+        let response = client.get(&zip_url)
+            .header("User-Agent", "Skill-Manager/1.0")
+            .send()
+            .context("Failed to download zip file")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Failed to download: HTTP {}", response.status());
+        }
+
+        let bytes = response.bytes().context("Failed to read response body")?;
+        eprintln!("Downloaded {} bytes", bytes.len());
+
+        // 解压 zip 文件
+        let cursor = Cursor::new(bytes.as_ref());
+        let mut archive = zip::ZipArchive::new(cursor)
+            .context("Failed to open zip archive")?;
+
+        // zip 内的根目录名称通常是 repo-branch
+        let root_prefix = format!("{}-{}/", repo, branch);
+        let target_prefix = format!("{}{}/", root_prefix, path);
+
+        fs::create_dir_all(target_path)?;
+
+        let mut extracted_count = 0;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+            let file_path = file.name().to_string();
+
+            // 检查是否在目标子目录中
+            if file_path.starts_with(&target_prefix) {
+                let relative_path = &file_path[target_prefix.len()..];
+                if relative_path.is_empty() {
+                    continue;
+                }
+
+                let out_path = target_path.join(relative_path);
+
+                if file.is_dir() {
+                    fs::create_dir_all(&out_path)?;
+                } else {
+                    if let Some(parent) = out_path.parent() {
+                        fs::create_dir_all(parent)?;
+                    }
+                    let mut outfile = fs::File::create(&out_path)?;
+                    std::io::copy(&mut file, &mut outfile)?;
+                    extracted_count += 1;
+                }
+            }
+        }
+
+        if extracted_count == 0 {
+            anyhow::bail!("Subdirectory not found in archive: {}", path);
+        }
+
+        eprintln!("Extracted {} files", extracted_count);
+        Ok(())
+    } else {
+        // 普通仓库克隆 - 先尝试 git clone，失败则下载 zip
+        let clone_url = format!("https://github.com/{}/{}.git", owner, repo);
+
+        let output = Command::new("git")
+            .arg("clone")
+            .arg("--depth")
+            .arg("1")
+            .arg("--branch")
+            .arg(&branch)
+            .arg(&clone_url)
+            .arg(target_path)
+            .output();
+
+        match output {
+            Ok(out) if out.status.success() => Ok(()),
+            _ => {
+                // git 不可用或失败，使用 zip 下载
+                eprintln!("Git clone failed, falling back to zip download");
+                download_repo_as_zip(&owner, &repo, &branch, target_path)
+            }
+        }
+    }
+}
+
+/// 下载整个仓库为 zip 并解压
+fn download_repo_as_zip(owner: &str, repo: &str, branch: &str, target_path: &Path) -> Result<()> {
+    use std::io::Cursor;
+
+    let zip_url = format!(
+        "https://github.com/{}/{}/archive/refs/heads/{}.zip",
+        owner, repo, branch
+    );
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .context("Failed to create HTTP client")?;
+
+    let response = client.get(&zip_url)
+        .header("User-Agent", "Skill-Manager/1.0")
+        .send()
+        .context("Failed to download zip file")?;
+
+    if !response.status().is_success() {
+        anyhow::bail!("Failed to download: HTTP {}", response.status());
+    }
+
+    let bytes = response.bytes().context("Failed to read response body")?;
+
+    let cursor = Cursor::new(bytes.as_ref());
+    let mut archive = zip::ZipArchive::new(cursor)
+        .context("Failed to open zip archive")?;
+
+    // zip 内的根目录名称通常是 repo-branch
+    let root_prefix = format!("{}-{}/", repo, branch);
+
+    fs::create_dir_all(target_path)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let file_path = file.name().to_string();
+
+        if file_path.starts_with(&root_prefix) {
+            let relative_path = &file_path[root_prefix.len()..];
+            if relative_path.is_empty() {
+                continue;
+            }
+
+            let out_path = target_path.join(relative_path);
+
+            if file.is_dir() {
+                fs::create_dir_all(&out_path)?;
+            } else {
+                if let Some(parent) = out_path.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                let mut outfile = fs::File::create(&out_path)?;
+                std::io::copy(&mut file, &mut outfile)?;
+            }
+        }
     }
 
     Ok(())

@@ -9,6 +9,7 @@ interface SkillStore {
   isLoading: boolean;
   projectPaths: string[];
   defaultInstallLocation: 'system' | 'project';
+  selectedProjectIndex: number;
 
   // Actions
   fetchMarketplaceSkills: () => Promise<void>;
@@ -21,6 +22,7 @@ interface SkillStore {
   fetchProjectPaths: () => Promise<void>;
   saveProjectPaths: (paths: string[]) => Promise<void>;
   setDefaultInstallLocation: (location: 'system' | 'project') => void;
+  setSelectedProjectIndex: (index: number) => void;
 }
 
 export const useSkillStore = create<SkillStore>()(
@@ -31,9 +33,14 @@ export const useSkillStore = create<SkillStore>()(
       isLoading: false,
       projectPaths: [],
       defaultInstallLocation: 'system',
+      selectedProjectIndex: 0,
 
       setDefaultInstallLocation: (location: 'system' | 'project') => {
         set({ defaultInstallLocation: location });
+      },
+
+      setSelectedProjectIndex: (index: number) => {
+        set({ selectedProjectIndex: index });
       },
 
       fetchMarketplaceSkills: async () => {
@@ -97,15 +104,15 @@ export const useSkillStore = create<SkillStore>()(
 
       installSkill: async (skill: MarketplaceSkill) => {
         try {
-          const { defaultInstallLocation, projectPaths } = get();
+          const { defaultInstallLocation, projectPaths, selectedProjectIndex } = get();
 
           // 确定安装路径
           let installPath = undefined;
           if (defaultInstallLocation === 'project') {
             // 如果设置为安装到项目，但没有项目路径，则回退到系统路径
             if (projectPaths.length > 0) {
-              // 默认使用第一个项目路径
-              installPath = projectPaths[0];
+              // 使用选中的项目路径，如果索引无效则使用第一个
+              installPath = projectPaths[selectedProjectIndex] || projectPaths[0];
             } else {
               console.warn('No project paths configured, installing to system directory');
             }
@@ -134,10 +141,29 @@ export const useSkillStore = create<SkillStore>()(
         }
       },
 
-      uninstallSkill: (id: string) => {
-        set((state) => ({
-          installedSkills: state.installedSkills.filter((s) => s.id !== id)
-        }));
+      uninstallSkill: async (id: string) => {
+        try {
+          // 找到对应的 skill
+          const skill = get().installedSkills.find(s => s.id === id);
+          if (!skill) {
+            throw new Error('Skill not found');
+          }
+
+          // 调用后端删除
+          await invoke('uninstall_skill', {
+            request: {
+              skill_path: skill.localPath
+            }
+          });
+
+          // 从 state 中移除
+          set((state) => ({
+            installedSkills: state.installedSkills.filter((s) => s.id !== id)
+          }));
+        } catch (error) {
+          console.error('Uninstall skill failed:', error);
+          throw error;
+        }
       },
 
       updateSkill: (id: string, updatedSkill: Partial<InstalledSkill>) => {
@@ -221,7 +247,9 @@ export const useSkillStore = create<SkillStore>()(
       name: 'skill-manager-storage',
       partialize: (state) => ({
         installedSkills: state.installedSkills,
-        projectPaths: state.projectPaths
+        projectPaths: state.projectPaths,
+        defaultInstallLocation: state.defaultInstallLocation,
+        selectedProjectIndex: state.selectedProjectIndex
       }),
     }
   )

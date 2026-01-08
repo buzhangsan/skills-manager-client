@@ -21,6 +21,7 @@ async fn main() {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             // Health check
             health_check,
@@ -42,6 +43,10 @@ async fn main() {
             perform_update,
             // File picker
             select_directory,
+            // Open URL
+            open_url,
+            // Uninstall skill
+            uninstall_skill,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

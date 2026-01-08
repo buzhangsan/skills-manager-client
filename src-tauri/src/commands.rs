@@ -283,3 +283,56 @@ pub async fn select_directory(_app: tauri::AppHandle) -> Result<Option<String>, 
         .ok_or_else(|| "No directory selected".to_string())
         .or(Ok(None))
 }
+
+// ===== Open URL =====
+
+#[tauri::command]
+pub async fn open_url(url: String) -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "windows")]
+    {
+        // 在 Windows 上使用 CREATE_NO_WINDOW 标志来隐藏控制台窗口
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        Command::new("cmd")
+            .args(["/c", "start", "", &url])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+// ===== Uninstall Skill =====
+
+#[derive(Deserialize)]
+pub struct UninstallSkillRequest {
+    skill_path: String,
+}
+
+#[tauri::command]
+pub async fn uninstall_skill(request: UninstallSkillRequest) -> Result<String, String> {
+    remove_skill(&request.skill_path)
+        .map_err(|e| format!("Failed to uninstall skill: {}", e))?;
+
+    Ok("Skill uninstalled successfully".to_string())
+}
