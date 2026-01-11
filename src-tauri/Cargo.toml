@@ -1,6 +1,6 @@
 [package]
 name = "skill-manager"
-version = "1.2.1"
+version = "1.2.2"
 description = "Skill Manager Desktop App"
 authors = ["you"]
 license = ""

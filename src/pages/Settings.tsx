@@ -54,17 +54,6 @@ const Settings = () => {
     }
   };
 
-  const handleSelectDirectory = async () => {
-    try {
-      const selected = await invoke<string | null>('select_directory');
-      if (selected) {
-        setNewPath(selected);
-      }
-    } catch (error) {
-      console.error('Failed to select directory:', error);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">{t('settings')}</h2>
@@ -252,7 +241,7 @@ const Settings = () => {
                   <span className="text-sm text-base-content/70">
                     {i18n.language === 'zh' ? '版本' : 'Version'}
                   </span>
-                  <span className="text-sm font-semibold">v1.2.0</span>
+                  <span className="text-sm font-semibold">v1.2.2</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-base-200">
@@ -380,13 +369,6 @@ const Settings = () => {
                   onKeyPress={(e) => e.key === 'Enter' && handleAddPath()}
                 />
                 <button
-                  className="btn btn-square btn-outline"
-                  onClick={handleSelectDirectory}
-                  title={i18n.language === 'zh' ? '选择文件夹' : 'Select Folder'}
-                >
-                  <FolderOpen size={20} />
-                </button>
-                <button
                   className="btn btn-primary"
                   onClick={handleAddPath}
                   disabled={!newPath.trim()}
@@ -413,17 +395,6 @@ const Settings = () => {
                   : '✓ Project paths are automatically saved when added or removed'
                 }
               </span>
-            </div>
-
-            <div className="divider"></div>
-
-            <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
-                    <input type="checkbox" className="toggle toggle-primary" defaultChecked />
-                    <span className="label-text">
-                      {i18n.language === 'zh' ? '自动更新 Skills' : 'Auto Update Skills'}
-                    </span>
-                </label>
             </div>
         </div>
       </div>
