@@ -37,6 +37,15 @@ jobs:
       - name: Build Tauri app (x64)
         run: npm run tauri build -- --target x86_64-apple-darwin
 
+      - name: Rename ARM64 DMG
+        run: |
+          cd src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
+          for f in *_aarch64.dmg; do
+            newname="${f/_aarch64.dmg/_arm64.dmg}"
+            mv "$f" "$newname"
+            echo "Renamed: $f -> $newname"
+          done
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
