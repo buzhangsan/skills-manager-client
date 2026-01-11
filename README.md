@@ -1,101 +1,97 @@
 # Skill Manager
 
-一个用于管理 Claude Skills 的桌面应用程序，支持系统级和项目级 Skill 的浏览、安装、导入和安全扫描。
+[中文文档](./README_zh.md)
 
-## 快速开始
+A desktop application for managing Claude Code Skills, supporting browsing, installation, import, and security scanning of both system-level and project-level Skills.
 
-直接从release下载最新版本
+## Quick Start
 
-如果想更加智能的查找 skill，请使用此 skill ： https://github.com/buzhangsan/skill-manager
-如有问题请在issues中反馈
+Download the latest version from [Releases](https://github.com/buzhangsan/skills-manager-client/releases).
 
-感谢黄佬的推荐 https://x.com/servasyy_ai/status/2010240935121342719
+For smarter skill discovery, try this CLI tool: https://github.com/buzhangsan/skill-manager
 
-## 功能特性
+Report issues on [GitHub Issues](https://github.com/buzhangsan/skills-manager-client/issues).
 
-### 1. **我的 Skills**
-- 自动扫描系统级和项目级已安装的 Skills
-- 支持查看 Skill 详细信息
-- 运行和编辑 Skill 配置
-- 一键卸载不需要的 Skills
+## Features
 
-### 2. **Skill 市场**
-- 浏览 40,800+ 开源 Skills
-- 搜索和筛选功能
-- 一键安装到本地
+### 1. **My Skills**
+- Automatically scan installed Skills at system and project levels
+- View detailed Skill information
+- One-click uninstall for unwanted Skills
 
-### 3. **Skill 导入**
-支持三种导入方式：
-- **GitHub 导入**：输入 GitHub 仓库 URL，自动克隆到本地
-- **本地文件夹**：从本地文件夹导入现有 Skill
-- **本地压缩包**：从 ZIP 等压缩包导入（即将支持）
+### 2. **Skill Marketplace**
+- Browse 40,800+ open-source Skills
+- Search and filter functionality
+- One-click install to local
 
-### 4. **安全扫描**
-- 扫描已安装 Skill 的安全风险
-- 标记可疑代码模式
-- 安全评分和建议
+### 3. **Skill Import**
+Two import methods supported:
+- **GitHub Import**: Enter a GitHub repository URL to automatically clone locally
+- **Local Folder**: Import existing Skills from a local folder
 
-### 5. **项目路径配置**
-- 自定义多个项目路径
-- 自动扫描项目下的 `.claude/skills` 文件夹
-- 跨平台支持（Windows、macOS、Linux）
+### 4. **Security Scanning**
+- Scan installed Skills for security risks
+- Flag suspicious code patterns
+- Security scoring and recommendations
 
-## 技术栈
+### 5. **Project Path Configuration**
+- Customize multiple project paths
+- Automatically scan `.claude/skills` folders under projects
+- Cross-platform support (Windows, macOS)
 
-- **前端**: React 19, TypeScript, Vite 7
-- **UI 库**: Tailwind CSS 3.4, DaisyUI 5.5
-- **状态管理**: Zustand 5.0 (with persist)
-- **路由**: React Router v7
-- **图标**: Lucide React
-- **图表**: Recharts
-- **后端**: Node.js + Express
-- **桌面打包**: Tauri v2 (计划中)
+## Tech Stack
 
-## 开发和运行
+- **Frontend**: React 19, TypeScript, Vite 7
+- **UI Library**: Tailwind CSS 3.4, DaisyUI 5.5
+- **State Management**: Zustand 5.0 (with persist)
+- **Routing**: React Router v7
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **Desktop**: Tauri v2 (Rust backend)
 
-### 1. 安装依赖
+## Development
+
+### Prerequisites
+- Node.js 20+
+- Rust (latest stable)
+- npm
+
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. 启动后端 API 服务
+### 2. Run in Development Mode
 
 ```bash
-cd server
-node index.js
+npm run tauri dev
 ```
 
-后端服务将运行在 `http://localhost:3002`
+This will start both the Vite dev server and the Tauri application.
 
-### 3. 启动前端开发服务器
-
-在另一个终端窗口：
+### 3. Build for Production
 
 ```bash
-npm run dev
+npm run tauri build
 ```
 
-前端将运行在 `http://localhost:3001` (或可用的端口)
+Build artifacts will be in `src-tauri/target/release/bundle/`.
 
-### 4. 访问应用
+## Skill Directory Structure
 
-打开浏览器访问: http://localhost:3001
-
-## Skill 目录结构
-
-### 系统级 Skills
-- **Windows**: `C:\Users\[用户名]\.claude\skills`
+### System-Level Skills
+- **Windows**: `C:\Users\[username]\.claude\skills`
 - **macOS/Linux**: `~/.claude/skills`
 
-### 项目级 Skills
-在设置页面配置项目根目录，系统会自动扫描：
+### Project-Level Skills
+Configure project root directories in Settings, and the system will automatically scan:
 ```
-[项目根目录]/.claude/skills/
+[Project Root]/.claude/skills/
 ```
 
-### Skill 格式要求
-每个 Skill 文件夹必须包含 `SKILL.md` 文件，格式如下：
+### Skill Format Requirements
+Each Skill folder must contain a `SKILL.md` file in the following format:
 
 ```markdown
 ---
@@ -110,47 +106,19 @@ version: 1.0.0
 Your skill content here...
 ```
 
-## API 接口
+## Downloads
 
-### 扫描本地 Skills
-```
-GET /api/skills/scan
-```
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `Skill.Manager_x.x.x_arm64.dmg` |
+| macOS (Intel) | `Skill.Manager_x.x.x_x64.dmg` |
+| Windows (Installer) | `Skill.Manager_x.x.x_x64-setup.exe` |
+| Windows (MSI) | `Skill.Manager_x.x.x_x64_en-US.msi` |
 
-### 导入 GitHub Skill
-```
-POST /api/skills/import/github
-Body: { "url": "https://github.com/user/repo" }
-```
+## Contributing
 
-### 导入本地 Skill
-```
-POST /api/skills/import/local
-Body: { "sourcePath": "/path/to/skill" }
-```
+Issues and Pull Requests are welcome!
 
-### 获取项目路径配置
-```
-GET /api/config/project-paths
-```
-
-### 保存项目路径配置
-```
-POST /api/config/project-paths
-Body: { "paths": ["/path1", "/path2"] }
-```
-
-## 打包为桌面应用
-
-计划使用 Tauri v2 打包为：
-- Windows: `.exe`
-- macOS: `.dmg`
-- Linux: `.AppImage`
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 许可证
+## License
 
 MIT License
