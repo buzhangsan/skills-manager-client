@@ -2,6 +2,15 @@
 
 一个用于管理 Claude Skills 的桌面应用程序，支持系统级和项目级 Skill 的浏览、安装、导入和安全扫描。
 
+## 快速开始
+
+直接从release下载最新版本
+
+如果想更加智能的查找 skill，请使用此 skill ： https://github.com/buzhangsan/skill-manager
+如有问题请在issues中反馈
+
+感谢黄佬的推荐 https://x.com/servasyy_ai/status/2010240935121342719
+
 ## 功能特性
 
 ### 1. **我的 Skills**
