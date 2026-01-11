@@ -4,6 +4,8 @@
 
 ## 使用
 普通用户直接从release下载最新版本，mac日内发布
+
+如果想更加智能的查找 skill，请使用此 skill ： https://github.com/buzhangsan/skill-manager
 如有问题请在issues中反馈
 
 感谢黄佬的推荐 https://x.com/servasyy_ai/status/2010240935121342719
