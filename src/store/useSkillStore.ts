@@ -63,7 +63,7 @@ export const useSkillStore = create<SkillStore>()(
 
           const allSkills = [
             ...result.systemSkills.map((s: any) => ({
-              id: s.name,
+              id: s.path,  // 使用 path 作为唯一 id
               name: s.name,
               description: s.description || '',
               localPath: s.path,
@@ -75,7 +75,7 @@ export const useSkillStore = create<SkillStore>()(
               stars: 0
             })),
             ...result.projectSkills.map((s: any) => ({
-              id: s.name,
+              id: s.path,  // 使用 path 作为唯一 id
               name: s.name,
               description: s.description || '',
               localPath: s.path,
@@ -150,11 +150,15 @@ export const useSkillStore = create<SkillStore>()(
           }
 
           // 调用后端删除
-          await invoke('uninstall_skill', {
+          const result: any = await invoke('uninstall_skill', {
             request: {
-              skill_path: skill.localPath
+              skillPath: skill.localPath
             }
           });
+
+          if (!result.success) {
+            throw new Error(result.message || 'Uninstall failed');
+          }
 
           // 从 state 中移除
           set((state) => ({
@@ -246,7 +250,7 @@ export const useSkillStore = create<SkillStore>()(
     {
       name: 'skill-manager-storage',
       partialize: (state) => ({
-        installedSkills: state.installedSkills,
+        // 不持久化 installedSkills，每次启动重新扫描
         projectPaths: state.projectPaths,
         defaultInstallLocation: state.defaultInstallLocation,
         selectedProjectIndex: state.selectedProjectIndex

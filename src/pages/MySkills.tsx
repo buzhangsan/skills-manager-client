@@ -4,10 +4,11 @@ import { useSkillStore } from '../store/useSkillStore';
 import { Trash2, Eye, FolderOpen, X, Github, HardDrive, Plus } from 'lucide-react';
 import type { InstalledSkill } from '../types';
 import { getLocalizedDescription } from '../utils/i18n';
+import { invoke } from '@tauri-apps/api/core';
 
 const MySkills = () => {
   const { t, i18n } = useTranslation();
-  const { installedSkills, scanLocalSkills, uninstallSkill, importFromGithub, importFromLocal } = useSkillStore();
+  const { installedSkills, scanLocalSkills, importFromGithub, importFromLocal } = useSkillStore();
   const [activeTab, setActiveTab] = useState<'all' | 'system' | 'project'>('all');
   const [selectedSkill, setSelectedSkill] = useState<InstalledSkill | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -17,6 +18,35 @@ const MySkills = () => {
   const [importUrl, setImportUrl] = useState('');
   const [importPath, setImportPath] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<{show: boolean, success: boolean, message: string}>({show: false, success: false, message: ''});
+
+  const handleUninstall = async (skill: InstalledSkill) => {
+    if (isDeleting) return;
+
+    // 使用 window.confirm 可能也不工作，直接执行删除
+    setIsDeleting(true);
+    try {
+      const result: any = await invoke('uninstall_skill', {
+        request: {
+          skillPath: skill.localPath
+        }
+      });
+
+      if (result.success) {
+        setDeleteResult({show: true, success: true, message: `${skill.name} 已成功删除`});
+        await scanLocalSkills();
+      } else {
+        setDeleteResult({show: true, success: false, message: `删除失败: ${result.message}`});
+      }
+    } catch (error: any) {
+      const errMsg = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
+      setDeleteResult({show: true, success: false, message: `删除出错: ${errMsg}`});
+    } finally {
+      setIsDeleting(false);
+      setTimeout(() => setDeleteResult({show: false, success: false, message: ''}), 3000);
+    }
+  };
 
   useEffect(() => {
     scanLocalSkills();
@@ -33,7 +63,6 @@ const MySkills = () => {
 
     // 读取 SKILL.md 文件内容
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
       const content = await invoke<string>('read_skill', {
         skillPath: skill.localPath
       });
@@ -75,6 +104,15 @@ const MySkills = () => {
 
   return (
     <div className="space-y-6">
+      {/* Delete Result Toast */}
+      {deleteResult.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div className={`alert ${deleteResult.success ? 'alert-success' : 'alert-error'} shadow-lg`}>
+            <span>{deleteResult.message}</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h2 className="text-2xl font-bold">{t('mySkills')}</h2>
@@ -141,7 +179,7 @@ const MySkills = () => {
                   </div>
                 </td>
                 <td className="max-w-xs">
-                    <div className="truncate" title={getLocalizedDescription(skill, i18n.language)}>
+                    <div className="line-clamp-3" title={getLocalizedDescription(skill, i18n.language)}>
                       {getLocalizedDescription(skill, i18n.language)}
                     </div>
                 </td>
@@ -168,22 +206,8 @@ const MySkills = () => {
                     </button>
                     <button
                         className="btn btn-sm btn-ghost text-error hover:bg-error/10"
-                        onClick={async () => {
-                            if(window.confirm(
-                              i18n.language === 'zh'
-                                ? `确定要卸载 ${skill.name} 吗？这将删除磁盘上的文件。`
-                                : `Are you sure you want to uninstall ${skill.name}? This will delete the files from disk.`
-                            )) {
-                                try {
-                                    await uninstallSkill(skill.id);
-                                    alert(i18n.language === 'zh' ? '卸载成功！' : 'Uninstalled successfully!');
-                                } catch (error: any) {
-                                    alert(i18n.language === 'zh'
-                                        ? `卸载失败: ${error.message || error}`
-                                        : `Uninstall failed: ${error.message || error}`);
-                                }
-                            }
-                        }}
+                        onClick={() => handleUninstall(skill)}
+                        disabled={isDeleting}
                     >
                         <Trash2 size={16} />
                         {t('remove')}

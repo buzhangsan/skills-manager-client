@@ -37,3 +37,7 @@ manus/
 
 # Batch files
 *.bat
+.npm-cache
+Skill Manager.app
+*.exe
+*.dmg
