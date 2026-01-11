@@ -2,9 +2,6 @@ name: Build Windows
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
@@ -32,7 +29,10 @@ jobs:
         run: npm run build
 
       - name: Build Tauri app
-        run: npm run tauri build
+        run: npm run tauri build -- --verbose
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
