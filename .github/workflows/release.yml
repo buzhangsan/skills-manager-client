@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -24,6 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Build Tauri app (ARM64)
         run: npm run tauri build -- --target aarch64-apple-darwin
@@ -55,6 +61,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Build Tauri app
         run: npm run tauri build
