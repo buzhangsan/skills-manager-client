@@ -19,10 +19,14 @@ Report issues on [GitHub Issues](https://github.com/buzhangsan/skills-manager-cl
 - View detailed Skill information
 - One-click uninstall for unwanted Skills
 
+![My Skills](mySkill.png)
+
 ### 2. **Skill Marketplace**
 - Browse 40,800+ open-source Skills
 - Search and filter functionality
 - One-click install to local
+
+![Marketplace](marketplace.png)
 
 ### 3. **Skill Import**
 Two import methods supported:

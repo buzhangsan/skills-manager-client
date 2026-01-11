@@ -21,10 +21,14 @@
 - 支持查看 Skill 详细信息
 - 一键卸载不需要的 Skills
 
+![我的 Skills](mySkill.png)
+
 ### 2. **Skill 市场**
 - 浏览 40,800+ 开源 Skills
 - 搜索和筛选功能
 - 一键安装到本地
+
+![Skill 市场](marketplace.png)
 
 ### 3. **Skill 导入**
 支持两种导入方式：
