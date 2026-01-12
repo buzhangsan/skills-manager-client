@@ -22,7 +22,7 @@ Report issues on [GitHub Issues](https://github.com/buzhangsan/skills-manager-cl
 ![My Skills](mySkill.png)
 
 ### 2. **Skill Marketplace**
-- Browse 40,800+ open-source Skills
+- Browse 53,000+ open-source Skills
 - Search and filter functionality
 - One-click install to local
 

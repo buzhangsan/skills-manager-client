@@ -24,7 +24,7 @@
 ![我的 Skills](mySkill.png)
 
 ### 2. **Skill 市场**
-- 浏览 40,800+ 开源 Skills
+- 浏览 53,000+ 开源 Skills
 - 搜索和筛选功能
 - 一键安装到本地
 
