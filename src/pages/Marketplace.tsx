@@ -1,9 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSkillStore } from '../store/useSkillStore';
-import { Download, Search, Star, ExternalLink, Check, Loader2 } from 'lucide-react';
+import { Download, Search, Star, ExternalLink, Check, Loader2, Shield, ShieldCheck, ShieldAlert, X } from 'lucide-react';
 import { getLocalizedDescription } from '../utils/i18n';
 import { invoke } from '@tauri-apps/api/core';
+
+interface SecurityReport {
+  skillId: string;
+  score: number;
+  level: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+  issues: any[];
+  blocked: boolean;
+  recommendations: string[];
+  scannedFiles: string[];
+}
+
+type InstallPhase = 'idle' | 'downloading' | 'installing' | 'scanning' | 'done';
+
+interface InstallStatus {
+  show: boolean;
+  phase: InstallPhase;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  securityReport?: SecurityReport;
+}
 
 const Marketplace = () => {
   const { t, i18n } = useTranslation();
@@ -11,7 +31,12 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [installingSkillId, setInstallingSkillId] = useState<string | null>(null);
-  const [installStatus, setInstallStatus] = useState<{show: boolean, message: string, type: 'info' | 'success' | 'error'}>({show: false, message: '', type: 'info'});
+  const [installStatus, setInstallStatus] = useState<InstallStatus>({
+    show: false,
+    phase: 'idle',
+    message: '',
+    type: 'info'
+  });
   const pageSize = 12;
 
   useEffect(() => {
@@ -20,35 +45,99 @@ const Marketplace = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const getPhaseMessage = (phase: InstallPhase, skillName: string): string => {
+    const messages = {
+      downloading: i18n.language === 'zh' ? `正在下载 ${skillName}...` : `Downloading ${skillName}...`,
+      installing: i18n.language === 'zh' ? `正在安装 ${skillName}...` : `Installing ${skillName}...`,
+      scanning: i18n.language === 'zh' ? `正在进行安全扫描...` : `Running security scan...`,
+      done: i18n.language === 'zh' ? `${skillName} 安装完成！` : `${skillName} installed successfully!`,
+      idle: ''
+    };
+    return messages[phase];
+  };
+
   const handleInstall = async (skill: any) => {
     if (installingSkillId) return;
 
     setInstallingSkillId(skill.id);
+
+    // 阶段1: 下载
     setInstallStatus({
       show: true,
-      message: i18n.language === 'zh' ? `正在安装 ${skill.name}...` : `Installing ${skill.name}...`,
+      phase: 'downloading',
+      message: getPhaseMessage('downloading', skill.name),
       type: 'info'
     });
 
     try {
-        await installSkill(skill);
+      // 阶段2: 安装
+      setTimeout(() => {
+        setInstallStatus(prev => ({
+          ...prev,
+          phase: 'installing',
+          message: getPhaseMessage('installing', skill.name)
+        }));
+      }, 500);
+
+      const result = await installSkill(skill);
+
+      // 阶段3: 安全扫描 (由 store 自动执行)
+      setInstallStatus(prev => ({
+        ...prev,
+        phase: 'scanning',
+        message: getPhaseMessage('scanning', skill.name)
+      }));
+
+      // 等待扫描完成
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 阶段4: 完成 - 显示安全报告
+      if (result.securityReport) {
+        const report = result.securityReport;
+        const isRisky = report.level === 'high' || report.level === 'critical' || report.blocked;
+
         setInstallStatus({
           show: true,
-          message: i18n.language === 'zh' ? `${skill.name} 安装成功！` : `${skill.name} installed successfully!`,
+          phase: 'done',
+          message: isRisky
+            ? (i18n.language === 'zh' ? `${skill.name} 已安装，但发现安全风险！` : `${skill.name} installed, but security risks found!`)
+            : (i18n.language === 'zh' ? `${skill.name} 安装成功，安全评分: ${report.score}` : `${skill.name} installed successfully, security score: ${report.score}`),
+          type: isRisky ? 'warning' : 'success',
+          securityReport: report
+        });
+      } else {
+        setInstallStatus({
+          show: true,
+          phase: 'done',
+          message: getPhaseMessage('done', skill.name),
           type: 'success'
         });
-        setTimeout(() => setInstallStatus({show: false, message: '', type: 'info'}), 3000);
+      }
+
+      // 5秒后自动关闭（如果没有风险）
+      if (!result.securityReport?.blocked && result.securityReport?.level !== 'critical') {
+        setTimeout(() => {
+          setInstallStatus(prev => {
+            if (prev.phase === 'done' && !prev.securityReport?.blocked) {
+              return { show: false, phase: 'idle', message: '', type: 'info' };
+            }
+            return prev;
+          });
+        }, 5000);
+      }
+
     } catch (error: any) {
-        console.error('Installation error:', error);
-        const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error');
-        setInstallStatus({
-          show: true,
-          message: i18n.language === 'zh' ? `安装失败: ${errorMessage}` : `Installation failed: ${errorMessage}`,
-          type: 'error'
-        });
-        setTimeout(() => setInstallStatus({show: false, message: '', type: 'info'}), 5000);
+      console.error('Installation error:', error);
+      const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error');
+      setInstallStatus({
+        show: true,
+        phase: 'done',
+        message: i18n.language === 'zh' ? `安装失败: ${errorMessage}` : `Installation failed: ${errorMessage}`,
+        type: 'error'
+      });
+      setTimeout(() => setInstallStatus({ show: false, phase: 'idle', message: '', type: 'info' }), 5000);
     } finally {
-        setInstallingSkillId(null);
+      setInstallingSkillId(null);
     }
   };
 
@@ -76,22 +165,18 @@ const Marketplace = () => {
   const totalPages = Math.ceil(filteredSkills.length / pageSize);
   const currentSkills = filteredSkills.slice((page - 1) * pageSize, page * pageSize);
 
-  // 生成页码数组
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
-      // 如果总页数少于等于5，显示所有页码
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // 否则显示当前页附近的页码
       let start = Math.max(1, page - 2);
       let end = Math.min(totalPages, page + 2);
 
-      // 调整范围以确保总是显示5个页码
       if (end - start < maxVisiblePages - 1) {
         if (start === 1) {
           end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -108,14 +193,85 @@ const Marketplace = () => {
     return pages;
   };
 
+  const getSecurityIcon = (level: string) => {
+    switch (level) {
+      case 'safe':
+      case 'low':
+        return <ShieldCheck className="text-success" size={20} />;
+      case 'medium':
+        return <Shield className="text-warning" size={20} />;
+      case 'high':
+      case 'critical':
+        return <ShieldAlert className="text-error" size={20} />;
+      default:
+        return <Shield className="text-info" size={20} />;
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-success';
+    if (score >= 70) return 'text-warning';
+    return 'text-error';
+  };
+
   return (
     <div className="space-y-6">
       {/* Install Status Toast */}
       {installStatus.show && (
         <div className="toast toast-top toast-end z-50">
-          <div className={`alert ${installStatus.type === 'success' ? 'alert-success' : installStatus.type === 'error' ? 'alert-error' : 'alert-info'} shadow-lg`}>
-            {installStatus.type === 'info' && <Loader2 className="animate-spin" size={18} />}
-            <span>{installStatus.message}</span>
+          <div className={`alert ${
+            installStatus.type === 'success' ? 'alert-success' :
+            installStatus.type === 'warning' ? 'alert-warning' :
+            installStatus.type === 'error' ? 'alert-error' : 'alert-info'
+          } shadow-lg max-w-md`}>
+            <div className="flex items-start gap-3 w-full">
+              {installStatus.phase !== 'done' ? (
+                <Loader2 className="animate-spin flex-shrink-0 mt-0.5" size={18} />
+              ) : installStatus.securityReport ? (
+                getSecurityIcon(installStatus.securityReport.level)
+              ) : installStatus.type === 'success' ? (
+                <Check size={18} className="flex-shrink-0 mt-0.5" />
+              ) : null}
+
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{installStatus.message}</p>
+
+                {/* 安全扫描详情 */}
+                {installStatus.securityReport && installStatus.phase === 'done' && (
+                  <div className="mt-2 text-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span>{i18n.language === 'zh' ? '安全评分:' : 'Security Score:'}</span>
+                      <span className={`font-bold ${getScoreColor(installStatus.securityReport.score)}`}>
+                        {installStatus.securityReport.score}/100
+                      </span>
+                    </div>
+                    {installStatus.securityReport.issues.length > 0 && (
+                      <p className="opacity-80">
+                        {i18n.language === 'zh'
+                          ? `发现 ${installStatus.securityReport.issues.length} 个潜在问题`
+                          : `Found ${installStatus.securityReport.issues.length} potential issues`}
+                      </p>
+                    )}
+                    {installStatus.securityReport.blocked && (
+                      <p className="text-error font-medium mt-1">
+                        {i18n.language === 'zh'
+                          ? '检测到严重安全风险！请在安全中心查看详情。'
+                          : 'Critical security risk detected! Check Security Center for details.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {installStatus.phase === 'done' && (
+                <button
+                  onClick={() => setInstallStatus({ show: false, phase: 'idle', message: '', type: 'info' })}
+                  className="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -159,6 +315,7 @@ const Marketplace = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {currentSkills.map((skill) => {
                     const installed = isInstalled(skill.id);
+                    const isCurrentlyInstalling = installingSkillId === skill.id;
                     return (
                         <div key={skill.id} className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow h-full flex flex-col">
                             <div className="card-body p-5 flex-1">
@@ -195,12 +352,19 @@ const Marketplace = () => {
                                             onClick={() => handleInstall(skill)}
                                             disabled={!!installingSkillId}
                                         >
-                                            {installingSkillId === skill.id ? (
+                                            {isCurrentlyInstalling ? (
+                                              <>
                                                 <span className="loading loading-spinner loading-xs"></span>
+                                                {installStatus.phase === 'scanning'
+                                                  ? (i18n.language === 'zh' ? '扫描中' : 'Scanning')
+                                                  : (i18n.language === 'zh' ? '安装中' : 'Installing')}
+                                              </>
                                             ) : (
+                                              <>
                                                 <Download size={16} />
+                                                {t('install')}
+                                              </>
                                             )}
-                                            {installingSkillId === skill.id ? (i18n.language === 'zh' ? '安装中...' : 'Installing...') : t('install')}
                                         </button>
                                     )}
                                 </div>

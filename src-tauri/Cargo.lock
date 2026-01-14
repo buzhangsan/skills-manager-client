@@ -3243,9 +3243,11 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 
 [[package]]
 name = "skill-manager"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
+ "anyhow",
  "dirs",
+ "lazy_static",
  "regex",
  "reqwest",
  "serde",

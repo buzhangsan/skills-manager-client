@@ -3,6 +3,23 @@ import { persist } from 'zustand/middleware';
 import type { InstalledSkill, MarketplaceSkill } from '../types';
 import { invoke } from '@tauri-apps/api/core';
 
+interface SecurityReport {
+  skillId: string;
+  score: number;
+  level: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+  issues: any[];
+  blocked: boolean;
+  recommendations: string[];
+  scannedFiles: string[];
+}
+
+interface InstallResult {
+  success: boolean;
+  message: string;
+  blocked: boolean;
+  securityReport?: SecurityReport;
+}
+
 interface SkillStore {
   installedSkills: InstalledSkill[];
   marketplaceSkills: MarketplaceSkill[];
@@ -11,18 +28,24 @@ interface SkillStore {
   defaultInstallLocation: 'system' | 'project';
   selectedProjectIndex: number;
 
+  // 安全扫描状态
+  isScanning: boolean;
+  lastSecurityReport: SecurityReport | null;
+
   // Actions
   fetchMarketplaceSkills: () => Promise<void>;
   scanLocalSkills: () => Promise<void>;
-  installSkill: (skill: MarketplaceSkill) => Promise<void>;
+  installSkill: (skill: MarketplaceSkill) => Promise<InstallResult>;
   uninstallSkill: (id: string) => void;
   updateSkill: (id: string, skill: Partial<InstalledSkill>) => void;
-  importFromGithub: (url: string, installPath?: string) => Promise<void>;
-  importFromLocal: (sourcePath: string, installPath?: string) => Promise<void>;
+  importFromGithub: (url: string, installPath?: string) => Promise<InstallResult>;
+  importFromLocal: (sourcePath: string, installPath?: string) => Promise<InstallResult>;
   fetchProjectPaths: () => Promise<void>;
   saveProjectPaths: (paths: string[]) => Promise<void>;
   setDefaultInstallLocation: (location: 'system' | 'project') => void;
   setSelectedProjectIndex: (index: number) => void;
+  scanSkillSecurity: (skillPath: string, skillId: string) => Promise<SecurityReport>;
+  clearLastSecurityReport: () => void;
 }
 
 export const useSkillStore = create<SkillStore>()(
@@ -34,6 +57,8 @@ export const useSkillStore = create<SkillStore>()(
       projectPaths: [],
       defaultInstallLocation: 'system',
       selectedProjectIndex: 0,
+      isScanning: false,
+      lastSecurityReport: null,
 
       setDefaultInstallLocation: (location: 'system' | 'project') => {
         set({ defaultInstallLocation: location });
@@ -41,6 +66,25 @@ export const useSkillStore = create<SkillStore>()(
 
       setSelectedProjectIndex: (index: number) => {
         set({ selectedProjectIndex: index });
+      },
+
+      clearLastSecurityReport: () => {
+        set({ lastSecurityReport: null });
+      },
+
+      scanSkillSecurity: async (skillPath: string, skillId: string) => {
+        set({ isScanning: true });
+        try {
+          const report: SecurityReport = await invoke('scan_skill_security', {
+            request: { skillPath, skillId }
+          });
+          set({ lastSecurityReport: report, isScanning: false });
+          return report;
+        } catch (error) {
+          console.error('Security scan failed:', error);
+          set({ isScanning: false });
+          throw error;
+        }
       },
 
       fetchMarketplaceSkills: async () => {
@@ -63,7 +107,7 @@ export const useSkillStore = create<SkillStore>()(
 
           const allSkills = [
             ...result.systemSkills.map((s: any) => ({
-              id: s.path,  // 使用 path 作为唯一 id
+              id: s.path,
               name: s.name,
               description: s.description || '',
               localPath: s.path,
@@ -75,7 +119,7 @@ export const useSkillStore = create<SkillStore>()(
               stars: 0
             })),
             ...result.projectSkills.map((s: any) => ({
-              id: s.path,  // 使用 path 作为唯一 id
+              id: s.path,
               name: s.name,
               description: s.description || '',
               localPath: s.path,
@@ -103,53 +147,76 @@ export const useSkillStore = create<SkillStore>()(
       },
 
       installSkill: async (skill: MarketplaceSkill) => {
-        try {
-          const { defaultInstallLocation, projectPaths, selectedProjectIndex } = get();
+        const { defaultInstallLocation, projectPaths, selectedProjectIndex } = get();
 
-          // 确定安装路径
-          let installPath = undefined;
-          if (defaultInstallLocation === 'project') {
-            // 如果设置为安装到项目，但没有项目路径，则回退到系统路径
-            if (projectPaths.length > 0) {
-              // 使用选中的项目路径，如果索引无效则使用第一个
-              installPath = projectPaths[selectedProjectIndex] || projectPaths[0];
-            } else {
-              console.warn('No project paths configured, installing to system directory');
-            }
+        // 确定安装路径
+        let installPath = undefined;
+        if (defaultInstallLocation === 'project') {
+          if (projectPaths.length > 0) {
+            installPath = projectPaths[selectedProjectIndex] || projectPaths[0];
+          } else {
+            console.warn('No project paths configured, installing to system directory');
           }
-
-          // 使用 GitHub URL 安装技能
-          const result: any = await invoke('import_github_skill', {
-            request: {
-              repoUrl: skill.githubUrl,
-              installPath,
-              skipSecurityCheck: false // 执行安全检查
-            }
-          });
-
-          if (!result.success || result.blocked) {
-            throw new Error(result.message || 'Installation failed');
-          }
-
-          // 重新扫描本地技能
-          await get().scanLocalSkills();
-
-          return result;
-        } catch (error) {
-          console.error('Install skill failed:', error);
-          throw error;
         }
+
+        // 使用 GitHub URL 安装技能
+        const result: any = await invoke('import_github_skill', {
+          request: {
+            repoUrl: skill.githubUrl,
+            installPath,
+            skipSecurityCheck: false
+          }
+        });
+
+        if (!result.success) {
+          throw new Error(result.message || 'Installation failed');
+        }
+
+        // 重新扫描本地技能
+        await get().scanLocalSkills();
+
+        // 安装后立即进行安全扫描
+        set({ isScanning: true });
+        try {
+          // 获取新安装的 skill 路径
+          const skillName = skill.githubUrl.split('/').pop()?.replace('.git', '') || skill.name;
+          const installedSkill = get().installedSkills.find(s =>
+            s.name === skillName || s.localPath?.includes(skillName)
+          );
+
+          if (installedSkill?.localPath) {
+            const securityReport = await get().scanSkillSecurity(
+              installedSkill.localPath,
+              installedSkill.name
+            );
+
+            return {
+              success: true,
+              message: result.message,
+              blocked: securityReport.blocked,
+              securityReport
+            };
+          }
+        } catch (scanError) {
+          console.error('Post-install security scan failed:', scanError);
+        } finally {
+          set({ isScanning: false });
+        }
+
+        return {
+          success: true,
+          message: result.message,
+          blocked: false
+        };
       },
 
       uninstallSkill: async (id: string) => {
         try {
-          // 找到对应的 skill
           const skill = get().installedSkills.find(s => s.id === id);
           if (!skill) {
             throw new Error('Skill not found');
           }
 
-          // 调用后端删除
           const result: any = await invoke('uninstall_skill', {
             request: {
               skillPath: skill.localPath
@@ -160,7 +227,6 @@ export const useSkillStore = create<SkillStore>()(
             throw new Error(result.message || 'Uninstall failed');
           }
 
-          // 从 state 中移除
           set((state) => ({
             installedSkills: state.installedSkills.filter((s) => s.id !== id)
           }));
@@ -179,51 +245,104 @@ export const useSkillStore = create<SkillStore>()(
       },
 
       importFromGithub: async (url: string, installPath?: string) => {
-        try {
-          const result: any = await invoke('import_github_skill', {
-            request: {
-              repoUrl: url,
-              installPath,
-              skipSecurityCheck: false
-            }
-          });
-
-          if (!result.success || result.blocked) {
-            throw new Error(result.message || 'Import failed');
+        const result: any = await invoke('import_github_skill', {
+          request: {
+            repoUrl: url,
+            installPath,
+            skipSecurityCheck: false
           }
+        });
 
-          // 重新扫描
-          await get().scanLocalSkills();
-          return result;
-        } catch (error) {
-          console.error('Import from GitHub failed:', error);
-          throw error;
+        if (!result.success) {
+          throw new Error(result.message || 'Import failed');
         }
+
+        // 重新扫描
+        await get().scanLocalSkills();
+
+        // 安装后立即进行安全扫描
+        set({ isScanning: true });
+        try {
+          const skillName = url.split('/').pop()?.replace('.git', '') || 'unknown';
+          const installedSkill = get().installedSkills.find(s =>
+            s.name === skillName || s.localPath?.includes(skillName)
+          );
+
+          if (installedSkill?.localPath) {
+            const securityReport = await get().scanSkillSecurity(
+              installedSkill.localPath,
+              installedSkill.name
+            );
+
+            return {
+              success: true,
+              message: result.message,
+              blocked: securityReport.blocked,
+              securityReport
+            };
+          }
+        } catch (scanError) {
+          console.error('Post-install security scan failed:', scanError);
+        } finally {
+          set({ isScanning: false });
+        }
+
+        return {
+          success: true,
+          message: result.message,
+          blocked: false
+        };
       },
 
       importFromLocal: async (sourcePath: string, installPath?: string) => {
-        try {
-          const skillName = sourcePath.split(/[\\/]/).pop() || 'unknown-skill';
+        const skillName = sourcePath.split(/[\\/]/).pop() || 'unknown-skill';
 
-          const result: any = await invoke('import_local_skill', {
-            request: {
-              sourcePath,
-              installPath,
-              skillName
-            }
-          });
-
-          if (!result.success) {
-            throw new Error(result.message || 'Import failed');
+        const result: any = await invoke('import_local_skill', {
+          request: {
+            sourcePath,
+            installPath,
+            skillName
           }
+        });
 
-          // 重新扫描
-          await get().scanLocalSkills();
-          return result;
-        } catch (error) {
-          console.error('Import from local failed:', error);
-          throw error;
+        if (!result.success) {
+          throw new Error(result.message || 'Import failed');
         }
+
+        // 重新扫描
+        await get().scanLocalSkills();
+
+        // 安装后立即进行安全扫描
+        set({ isScanning: true });
+        try {
+          const installedSkill = get().installedSkills.find(s =>
+            s.name === skillName || s.localPath?.includes(skillName)
+          );
+
+          if (installedSkill?.localPath) {
+            const securityReport = await get().scanSkillSecurity(
+              installedSkill.localPath,
+              installedSkill.name
+            );
+
+            return {
+              success: true,
+              message: result.message,
+              blocked: securityReport.blocked,
+              securityReport
+            };
+          }
+        } catch (scanError) {
+          console.error('Post-install security scan failed:', scanError);
+        } finally {
+          set({ isScanning: false });
+        }
+
+        return {
+          success: true,
+          message: result.message,
+          blocked: false
+        };
       },
 
       fetchProjectPaths: async () => {
@@ -250,7 +369,6 @@ export const useSkillStore = create<SkillStore>()(
     {
       name: 'skill-manager-storage',
       partialize: (state) => ({
-        // 不持久化 installedSkills，每次启动重新扫描
         projectPaths: state.projectPaths,
         defaultInstallLocation: state.defaultInstallLocation,
         selectedProjectIndex: state.selectedProjectIndex

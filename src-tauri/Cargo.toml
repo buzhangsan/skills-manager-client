@@ -24,6 +24,8 @@ reqwest = { version = "0.12", features = ["json"] }
 dirs = "6"
 walkdir = "2"
 regex = "1"
+lazy_static = "1"
+anyhow = "1"
 
 [profile.release]
 panic = "abort"

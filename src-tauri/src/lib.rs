@@ -4,6 +4,9 @@ use std::path::PathBuf;
 use std::process::Command;
 use walkdir::WalkDir;
 
+mod security;
+use security::SecurityReport;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SkillInfo {
     pub name: String,
@@ -434,6 +437,76 @@ fn read_skill(skill_path: String) -> Result<String, String> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SecurityScanRequest {
+    #[serde(rename = "skillPath")]
+    pub skill_path: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+}
+
+#[tauri::command]
+fn scan_skill_security(request: SecurityScanRequest) -> Result<SecurityReport, String> {
+    let path = PathBuf::from(&request.skill_path);
+
+    if !path.exists() {
+        return Err(format!("Skill path does not exist: {}", request.skill_path));
+    }
+
+    security::scan_directory(&path, &request.skill_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn scan_all_skills_security() -> Result<Vec<SecurityReport>, String> {
+    let mut reports = Vec::new();
+
+    // 扫描系统 skills
+    if let Some(skills_dir) = get_claude_skills_dir() {
+        if skills_dir.exists() {
+            for entry in WalkDir::new(&skills_dir).max_depth(2) {
+                if let Ok(entry) = entry {
+                    let path = entry.path();
+                    if path.is_dir() && path.join("SKILL.md").exists() {
+                        let skill_id = path.file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "unknown".to_string());
+
+                        if let Ok(report) = security::scan_directory(path, &skill_id) {
+                            reports.push(report);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 扫描项目 skills
+    if let Ok(paths) = get_project_paths() {
+        for project_path in paths {
+            let skills_dir = PathBuf::from(&project_path).join(".claude").join("skills");
+            if skills_dir.exists() {
+                for entry in WalkDir::new(&skills_dir).max_depth(2) {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_dir() && path.join("SKILL.md").exists() {
+                            let skill_id = path.file_name()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_else(|| "unknown".to_string());
+
+                            if let Ok(report) = security::scan_directory(path, &skill_id) {
+                                reports.push(report);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(reports)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -446,7 +519,9 @@ pub fn run() {
             get_project_paths,
             save_project_paths,
             open_url,
-            read_skill
+            read_skill,
+            scan_skill_security,
+            scan_all_skills_security
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
