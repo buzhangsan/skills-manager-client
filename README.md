@@ -4,7 +4,7 @@
 
 一个用于管理 Claude Code Skills 的桌面应用程序，支持系统级和项目级 Skill 的浏览、安装、导入和安全扫描。
 
-![截图](IMG_BDE611CEE6F1-1.png)
+![截图](.\src\assets\d5a32d32fda7567c59c55cecd707a5a4.jpg)
 
 ## 快速开始
 
