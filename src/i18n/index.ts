@@ -116,7 +116,7 @@ const resources = {
       systemLevel: "系统级",
       projectLevel: "项目级",
       securityStatus: "安全状态",
-      allActiveSkills: "所有已激活的技能",
+      allActiveSkills: "所有已激活的 Skills",
       globallyAvailable: "全局可用",
       currentProjectOnly: "当前项目专用",
       safe: "安全",
