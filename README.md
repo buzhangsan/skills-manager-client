@@ -1,6 +1,6 @@
 # Skill Manager
 
-[English](./README_en.md)
+[English](./docs/README_EN.md)
 
 一个用于管理 Claude Code Skills 的桌面应用程序，支持系统级和项目级 Skill 的浏览、安装、导入和安全扫描。
 
@@ -21,14 +21,14 @@
 - 支持查看 Skill 详细信息
 - 一键卸载不需要的 Skills
 
-![我的 Skills](mySkill.png)
+![我的 Skills](docs/images/mySkill.png)
 
 ### 2. **Skill 市场**
 - 浏览 53,000+ 开源 Skills
 - 搜索和筛选功能
 - 一键安装到本地
 
-![Skill 市场](marketplace.png)
+![Skill 市场](docs/images/marketplace.png)
 
 ### 3. **Skill 导入**
 支持两种导入方式：
