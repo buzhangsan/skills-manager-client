@@ -14,34 +14,34 @@ jobs:
   sync-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout main repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          path: main-repo
+
+      - name: Checkout skills-data-hub
+        uses: actions/checkout@v4
+        with:
+          repository: buzhangsan/skills-data-hub
+          token: ${{ secrets.DATA_HUB_PAT }}
+          path: data-hub
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Fetch latest data from skills-data-hub
-        env:
-          DATA_HUB_PAT: ${{ secrets.DATA_HUB_PAT }}
+      - name: Sync data files
         run: |
-          # Clone private skills-data-hub repository using PAT
-          git clone --depth 1 "https://${DATA_HUB_PAT}@github.com/buzhangsan/skills-data-hub.git" temp-data-hub
-
           # Only copy marketplace.json (single data file)
-          if [ -f "temp-data-hub/data/marketplace.json" ]; then
-            cp temp-data-hub/data/marketplace.json public/data/marketplace.json
+          if [ -f "data-hub/data/marketplace.json" ]; then
+            cp data-hub/data/marketplace.json main-repo/public/data/marketplace.json
             echo "Copied marketplace.json"
           fi
 
-          # Clean up
-          rm -rf temp-data-hub
-
       - name: Get skill count from data
         id: skill-count
+        working-directory: main-repo
         run: |
           if [ -f "public/data/marketplace.json" ]; then
             COUNT=$(node -e "const d=require('./public/data/marketplace.json'); console.log(Array.isArray(d) ? d.length : Object.keys(d).length)" 2>/dev/null || echo "53000")
@@ -52,6 +52,7 @@ jobs:
           echo "Skill count: $COUNT"
 
       - name: Update README with latest stats
+        working-directory: main-repo
         run: |
           COUNT="${{ steps.skill-count.outputs.count }}"
 
@@ -62,11 +63,13 @@ jobs:
 
       - name: Check for changes
         id: changes
+        working-directory: main-repo
         run: |
           git diff --quiet && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
 
       - name: Commit and push changes
         if: steps.changes.outputs.changed == 'true'
+        working-directory: main-repo
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
