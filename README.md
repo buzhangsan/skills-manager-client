@@ -1,103 +1,103 @@
 # Skill Manager
 
-[English](./docs/README_EN.md)
+[中文](./docs/README_CN.md)
 
-一个用于管理 Claude Code Skills 的桌面应用程序，支持系统级和项目级 Skill 的浏览、安装、导入和安全扫描。
+A desktop application for managing Claude Code Skills, supporting browsing, installation, import, and security scanning for system-level and project-level Skills.
 
-![截图](./src/assets/d5a32d32fda7567c59c55cecd707a5a4.jpg)
+![Screenshot](./src/assets/d5a32d32fda7567c59c55cecd707a5a4.jpg)
 
-## 快速开始
+## Quick Start
 
-直接从 [Releases](https://github.com/buzhangsan/skills-manager-client/releases) 下载最新版本。
+Download the latest version directly from [Releases](https://github.com/buzhangsan/skills-manager-client/releases).
 
-如果想更加智能的查找 skill，请使用此 CLI 工具：https://github.com/buzhangsan/skill-manager
+For a smarter way to find skills, use this CLI tool: https://github.com/buzhangsan/skill-manager
 
-如有问题请在 [Issues](https://github.com/buzhangsan/skills-manager-client/issues) 中反馈。
+If you have any issues, please report them in [Issues](https://github.com/buzhangsan/skills-manager-client/issues).
 
-## 功能特性
+## Features
 
-### 1. **我的 Skills**
-- 自动扫描系统级和项目级已安装的 Skills
-- 支持查看 Skill 详细信息
-- 一键卸载不需要的 Skills
+### 1. **My Skills**
+- Automatically scans installed Skills at system and project levels
+- View detailed Skill information
+- One-click uninstall unwanted Skills
 
-![我的 Skills](docs/images/mySkill.png)
+![My Skills](docs/images/mySkill.png)
 
-### 2. **Skill 市场**
-- 浏览 53,000+ 开源 Skills
-- 搜索和筛选功能
-- 一键安装到本地
+### 2. **Skill Marketplace**
+- Browse 53,000+ open-source Skills
+- Search and filter functionality
+- One-click installation to local
 
-![Skill 市场](docs/images/marketplace.png)
+![Skill Marketplace](docs/images/marketplace.png)
 
-### 3. **Skill 导入**
-支持两种导入方式：
-- **GitHub 导入**：输入 GitHub 仓库 URL，自动克隆到本地
-- **本地文件夹**：从本地文件夹导入现有 Skill
+### 3. **Skill Import**
+Supports two import methods:
+- **GitHub Import**: Enter a GitHub repository URL to automatically clone to local
+- **Local Folder**: Import existing Skills from a local folder
 
-### 4. **安全扫描**
-- 扫描已安装 Skill 的安全风险
-- 标记可疑代码模式
-- 安全评分和建议
+### 4. **Security Scanning**
+- Scan installed Skills for security risks
+- Flag suspicious code patterns
+- Security scoring and recommendations
 
-### 5. **项目路径配置**
-- 自定义多个项目路径
-- 自动扫描项目下的 `.claude/skills` 文件夹
-- 跨平台支持（Windows、macOS）
+### 5. **Project Path Configuration**
+- Customize multiple project paths
+- Automatically scan `.claude/skills` folders under projects
+- Cross-platform support (Windows, macOS)
 
-## 技术栈
+## Tech Stack
 
-- **前端**: React 19, TypeScript, Vite 7
-- **UI 库**: Tailwind CSS 3.4, DaisyUI 5.5
-- **状态管理**: Zustand 5.0 (with persist)
-- **路由**: React Router v7
-- **图标**: Lucide React
-- **图表**: Recharts
-- **桌面端**: Tauri v2 (Rust 后端)
+- **Frontend**: React 19, TypeScript, Vite 7
+- **UI Library**: Tailwind CSS 3.4, DaisyUI 5.5
+- **State Management**: Zustand 5.0 (with persist)
+- **Routing**: React Router v7
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **Desktop**: Tauri v2 (Rust backend)
 
-## 开发
+## Development
 
-### 环境要求
+### Requirements
 - Node.js 20+
-- Rust (最新稳定版)
+- Rust (latest stable)
 - npm
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. 开发模式运行
+### 2. Run in Development Mode
 
 ```bash
 npm run tauri dev
 ```
 
-这将同时启动 Vite 开发服务器和 Tauri 应用程序。
+This will start both the Vite development server and the Tauri application.
 
-### 3. 生产环境构建
+### 3. Build for Production
 
 ```bash
 npm run tauri build
 ```
 
-构建产物将在 `src-tauri/target/release/bundle/` 目录下。
+Build artifacts will be in the `src-tauri/target/release/bundle/` directory.
 
-## Skill 目录结构
+## Skill Directory Structure
 
-### 系统级 Skills
-- **Windows**: `C:\Users\[用户名]\.claude\skills`
+### System-level Skills
+- **Windows**: `C:\Users\[username]\.claude\skills`
 - **macOS/Linux**: `~/.claude/skills`
 
-### 项目级 Skills
-在设置页面配置项目根目录，系统会自动扫描：
+### Project-level Skills
+Configure the project root directory in the settings page, and the system will automatically scan:
 ```
-[项目根目录]/.claude/skills/
+[project_root]/.claude/skills/
 ```
 
-### Skill 格式要求
-每个 Skill 文件夹必须包含 `SKILL.md` 文件，格式如下：
+### Skill Format Requirements
+Each Skill folder must contain a `SKILL.md` file in the following format:
 
 ```markdown
 ---
@@ -112,19 +112,19 @@ version: 1.0.0
 Your skill content here...
 ```
 
-## 下载
+## Downloads
 
-| 平台 | 文件 |
-|------|------|
+| Platform | File |
+|----------|------|
 | macOS (Apple Silicon) | `Skill.Manager_x.x.x_arm64.dmg` |
 | macOS (Intel) | `Skill.Manager_x.x.x_x64.dmg` |
-| Windows (安装程序) | `Skill.Manager_x.x.x_x64-setup.exe` |
+| Windows (Installer) | `Skill.Manager_x.x.x_x64-setup.exe` |
 | Windows (MSI) | `Skill.Manager_x.x.x_x64_en-US.msi` |
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 许可证
+## License
 
 MIT License

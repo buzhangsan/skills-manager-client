@@ -5,7 +5,7 @@
 
 > Search, browse, and install 31,767+ community skills from GitHub for your AI agent
 
-**English** | [中文](../README.md)
+**English** | [中文](./README_CN.md)
 
 ## 🎯 Introduction
 

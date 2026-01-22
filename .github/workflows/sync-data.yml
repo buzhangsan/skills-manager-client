@@ -1,0 +1,86 @@
+name: Daily Data Sync
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch latest data from skills-data-hub
+        run: |
+          # Clone skills-data-hub repository
+          git clone --depth 1 https://github.com/buzhangsan/skills-data-hub.git temp-data-hub
+
+          # Copy data files if they exist
+          if [ -d "temp-data-hub/data" ]; then
+            cp -r temp-data-hub/data/* public/data/ 2>/dev/null || true
+          fi
+
+          # Check for any JSON data files at root level
+          if ls temp-data-hub/*.json 1> /dev/null 2>&1; then
+            cp temp-data-hub/*.json public/data/ 2>/dev/null || true
+          fi
+
+          # Clean up
+          rm -rf temp-data-hub
+
+      - name: Get skill count from data
+        id: skill-count
+        run: |
+          # Try to get skill count from JSON file
+          if [ -f "public/data/all_skills.json" ]; then
+            COUNT=$(node -e "console.log(require('./public/data/all_skills.json').length)" 2>/dev/null || echo "53000")
+          elif [ -f "public/data/skills.json" ]; then
+            COUNT=$(node -e "console.log(require('./public/data/skills.json').length)" 2>/dev/null || echo "53000")
+          else
+            COUNT="53000"
+          fi
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Update README with latest date
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+
+          # Update last updated date in README if pattern exists
+          if grep -q "Last Updated" README.md; then
+            sed -i "s/Last Updated.*/Last Updated | $TODAY |/" README.md
+          fi
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "chore: sync data from skills-data-hub ($(date +%Y-%m-%d))"
+          git push
+
+      - name: Trigger build workflow
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: data-updated

@@ -3,7 +3,7 @@
 ![Skill Manager Banner](./data/banner.jpeg)
 
 
-> 为agent搜索、浏览和安装 31,767+ 个 github社区中Skill
+> 为agent搜索、浏览和安装 53,000+ 个 github社区中Skill
 
 [English](../README.md) | **中文**
 
