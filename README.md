@@ -24,7 +24,7 @@ If you have any issues, please report them in [Issues](https://github.com/buzhan
 ![My Skills](docs/images/mySkill.png)
 
 ### 2. **Skill Marketplace**
-- Browse 53,000+ open-source Skills
+- Browse 67689+ open-source Skills
 - Search and filter functionality
 - One-click installation to local
 
