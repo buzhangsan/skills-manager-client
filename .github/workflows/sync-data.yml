@@ -25,18 +25,28 @@ jobs:
           node-version: '20'
 
       - name: Fetch latest data from skills-data-hub
+        env:
+          DATA_HUB_PAT: ${{ secrets.DATA_HUB_PAT }}
         run: |
-          # Clone skills-data-hub repository
-          git clone --depth 1 https://github.com/buzhangsan/skills-data-hub.git temp-data-hub
+          # Clone private skills-data-hub repository using PAT
+          git clone --depth 1 https://${DATA_HUB_PAT}@github.com/buzhangsan/skills-data-hub.git temp-data-hub
 
-          # Copy data files if they exist
-          if [ -d "temp-data-hub/data" ]; then
-            cp -r temp-data-hub/data/* public/data/ 2>/dev/null || true
+          # Copy marketplace.json to public/data/
+          if [ -f "temp-data-hub/data/marketplace.json" ]; then
+            cp temp-data-hub/data/marketplace.json public/data/marketplace.json
+            echo "Copied marketplace.json"
           fi
 
-          # Check for any JSON data files at root level
-          if ls temp-data-hub/*.json 1> /dev/null 2>&1; then
-            cp temp-data-hub/*.json public/data/ 2>/dev/null || true
+          # Copy marketplace-unique.json if exists
+          if [ -f "temp-data-hub/data/marketplace-unique.json" ]; then
+            cp temp-data-hub/data/marketplace-unique.json public/data/marketplace-unique.json
+            echo "Copied marketplace-unique.json"
+          fi
+
+          # Copy all_skills_with_cn.json if exists
+          if [ -f "temp-data-hub/data/all_skills_with_cn.json" ]; then
+            cp temp-data-hub/data/all_skills_with_cn.json public/data/all_skills_with_cn.json
+            echo "Copied all_skills_with_cn.json"
           fi
 
           # Clean up
@@ -46,22 +56,23 @@ jobs:
         id: skill-count
         run: |
           # Try to get skill count from JSON file
-          if [ -f "public/data/all_skills.json" ]; then
-            COUNT=$(node -e "console.log(require('./public/data/all_skills.json').length)" 2>/dev/null || echo "53000")
-          elif [ -f "public/data/skills.json" ]; then
-            COUNT=$(node -e "console.log(require('./public/data/skills.json').length)" 2>/dev/null || echo "53000")
+          if [ -f "public/data/marketplace.json" ]; then
+            COUNT=$(node -e "const d=require('./public/data/marketplace.json'); console.log(Array.isArray(d) ? d.length : Object.keys(d).length)" 2>/dev/null || echo "53000")
           else
             COUNT="53000"
           fi
           echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Skill count: $COUNT"
 
-      - name: Update README with latest date
+      - name: Update README with latest stats
         run: |
           TODAY=$(date +%Y-%m-%d)
+          COUNT="${{ steps.skill-count.outputs.count }}"
 
-          # Update last updated date in README if pattern exists
-          if grep -q "Last Updated" README.md; then
-            sed -i "s/Last Updated.*/Last Updated | $TODAY |/" README.md
+          # Update skill count in README if needed
+          if [ -n "$COUNT" ] && [ "$COUNT" != "53000" ]; then
+            sed -i "s/[0-9]\+,*[0-9]*+ open-source Skills/${COUNT}+ open-source Skills/g" README.md 2>/dev/null || true
+            sed -i "s/[0-9]\+,*[0-9]*+ Skills/${COUNT}+ Skills/g" README.md 2>/dev/null || true
           fi
 
       - name: Check for changes
