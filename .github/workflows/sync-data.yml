@@ -2,10 +2,9 @@ name: Daily Data Sync
 
 on:
   schedule:
-    # Run daily at 00:00 UTC
+    # 每天 00:00 UTC (北京时间 08:00) 运行
     - cron: '0 0 * * *'
   workflow_dispatch:
-    # Allow manual trigger
 
 permissions:
   contents: write
@@ -19,11 +18,11 @@ jobs:
         with:
           path: main-repo
 
+      # 优化：直接 checkout 公开仓库，无需 token
       - name: Checkout skills-data-hub
         uses: actions/checkout@v4
         with:
           repository: buzhangsan/skills-data-hub
-          token: ${{ secrets.DATA_HUB_PAT }}
           path: data-hub
 
       - name: Setup Node.js
@@ -33,12 +32,11 @@ jobs:
 
       - name: Sync data files
         run: |
-          # Only copy marketplace.json (single data file)
           if [ -f "data-hub/data/marketplace.json" ]; then
             cp data-hub/data/marketplace.json main-repo/public/data/marketplace.json
             echo "Copied marketplace.json"
           fi
-
+          
       - name: Get skill count from data
         id: skill-count
         working-directory: main-repo
@@ -49,14 +47,11 @@ jobs:
             COUNT="53000"
           fi
           echo "count=$COUNT" >> $GITHUB_OUTPUT
-          echo "Skill count: $COUNT"
 
       - name: Update README with latest stats
         working-directory: main-repo
         run: |
           COUNT="${{ steps.skill-count.outputs.count }}"
-
-          # Update skill count in README if needed
           if [ -n "$COUNT" ] && [ "$COUNT" != "53000" ]; then
             sed -i "s/[0-9]\+,*[0-9]*+ open-source Skills/${COUNT}+ open-source Skills/g" README.md 2>/dev/null || true
           fi

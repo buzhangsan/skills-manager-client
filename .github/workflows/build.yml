@@ -98,7 +98,8 @@ jobs:
   release:
     needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # 关键修改：允许 repository_dispatch 触发发布
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) || github.event_name == 'repository_dispatch'
     steps:
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
@@ -122,8 +123,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: build-${{ steps.sha.outputs.short }}
-          name: Build ${{ steps.sha.outputs.short }}
+          # 为自动构建添加特别的 tag 前缀
+          tag_name: ${{ github.event_name == 'repository_dispatch' && format('auto-data-{0}', steps.sha.outputs.short) || format('build-{0}', steps.sha.outputs.short) }}
+          name: ${{ github.event_name == 'repository_dispatch' && format('Data Update Build {0}', steps.sha.outputs.short) || format('Build {0}', steps.sha.outputs.short) }}
           files: |
             ./artifacts/macos/**/*.dmg
             ./artifacts/windows/**/*.msi
