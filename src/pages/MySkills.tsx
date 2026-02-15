@@ -147,7 +147,7 @@ const MySkills = () => {
       setSkillContent(content);
     } catch (error) {
       console.error('Failed to load skill content:', error);
-      setSkillContent(`# ${skill.name}\n\n${skill.description}\n\n**${i18n.language === 'zh' ? '版本' : 'Version'}**: ${skill.version}\n**${i18n.language === 'zh' ? '作者' : 'Author'}**: ${skill.author}\n\n**${i18n.language === 'zh' ? '路径' : 'Path'}**: ${skill.localPath}`);
+      setSkillContent(`# ${skill.name}\n\n${skill.description}\n\n**${t('version')}**: ${skill.version}\n**${t('author')}**: ${skill.author}\n\n**${t('path')}**: ${skill.localPath}`);
     }
   };
 
@@ -157,20 +157,20 @@ const MySkills = () => {
     setIsImporting(true);
     try {
       if (importType === 'github') {
-        if (!importUrl.trim()) throw new Error(i18n.language === 'zh' ? '请输入 GitHub 链接' : 'Please enter GitHub URL');
+        if (!importUrl.trim()) throw new Error(t('enterGithubUrl'));
         await importFromGithub(importUrl);
         setDeleteResult({
           show: true, 
           success: true, 
-          message: i18n.language === 'zh' ? '成功从 GitHub 导入 Skill！' : 'Successfully imported from GitHub!'
+          message: t('importSuccessGitHub')
         });
       } else if (importType === 'local') {
-        if (!importPath.trim()) throw new Error(i18n.language === 'zh' ? '请输入本地路径' : 'Please enter local path');
+        if (!importPath.trim()) throw new Error(t('enterLocalPath'));
         await importFromLocal(importPath);
         setDeleteResult({
           show: true, 
           success: true, 
-          message: i18n.language === 'zh' ? '成功从本地导入 Skill！' : 'Successfully imported from local!'
+          message: t('importSuccessLocal')
         });
       }
       
@@ -183,7 +183,7 @@ const MySkills = () => {
       setDeleteResult({
         show: true, 
         success: false, 
-        message: `${i18n.language === 'zh' ? '导入失败' : 'Import failed'}: ${error.message || error}`
+        message: `${t('importError')}: ${error.message || error}`
       });
     } finally {
       setIsImporting(false);

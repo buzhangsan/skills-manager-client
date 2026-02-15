@@ -28,7 +28,7 @@ interface SecurityReport {
 }
 
 const Security = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { installedSkills } = useSkillStore();
   const [scanning, setScanning] = useState(false);
   const [lastScan, setLastScan] = useState<Date | null>(null);
@@ -61,9 +61,9 @@ const Security = () => {
   const safeCount = reports.filter(r => r.level === 'safe' || r.level === 'low').length;
 
   const getOverallStatus = () => {
-    if (criticalCount > 0) return { text: i18n.language === 'zh' ? '存在风险' : 'At Risk', color: 'text-error', icon: XCircle };
-    if (highCount > 0) return { text: i18n.language === 'zh' ? '需要关注' : 'Needs Attention', color: 'text-warning', icon: AlertTriangle };
-    return { text: i18n.language === 'zh' ? '安全' : 'Safe', color: 'text-success', icon: ShieldCheck };
+    if (criticalCount > 0) return { text: t('securityStatusAtRisk'), color: 'text-error', icon: XCircle };
+    if (highCount > 0) return { text: t('securityStatusAttention'), color: 'text-warning', icon: AlertTriangle };
+    return { text: t('safe'), color: 'text-success', icon: ShieldCheck };
   };
 
   const overallStatus = getOverallStatus();
@@ -76,17 +76,17 @@ const Security = () => {
   const getLevelBadge = (level: string) => {
     switch (level) {
       case 'critical':
-        return <span className="badge badge-error badge-sm">{i18n.language === 'zh' ? '严重' : 'Critical'}</span>;
+        return <span className="badge badge-error badge-sm">{t('critical')}</span>;
       case 'high':
-        return <span className="badge badge-error badge-sm">{i18n.language === 'zh' ? '高危' : 'High'}</span>;
+        return <span className="badge badge-error badge-sm">{t('high')}</span>;
       case 'medium':
-        return <span className="badge badge-warning badge-sm">{i18n.language === 'zh' ? '中危' : 'Medium'}</span>;
+        return <span className="badge badge-warning badge-sm">{t('medium')}</span>;
       case 'low':
-        return <span className="badge badge-info badge-sm">{i18n.language === 'zh' ? '低危' : 'Low'}</span>;
+        return <span className="badge badge-info badge-sm">{t('low')}</span>;
       case 'safe':
-        return <span className="badge badge-success badge-sm">{i18n.language === 'zh' ? '安全' : 'Safe'}</span>;
+        return <span className="badge badge-success badge-sm">{t('safe')}</span>;
       default:
-        return <span className="badge badge-ghost badge-sm">{i18n.language === 'zh' ? '未知' : 'Unknown'}</span>;
+        return <span className="badge badge-ghost badge-sm">{t('unknown')}</span>;
     }
   };
 
@@ -95,12 +95,10 @@ const Security = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">
-            {i18n.language === 'zh' ? '安全中心' : 'Security Center'}
+            {t('securityCenterTitle')}
           </h2>
           <p className="text-base-content/60">
-            {i18n.language === 'zh'
-              ? '扫描并监控您的 Skills 以发现潜在漏洞'
-              : 'Scan and monitor your Skills for potential vulnerabilities'}
+            {t('securityCenterDesc')}
           </p>
         </div>
         <button
@@ -114,8 +112,8 @@ const Security = () => {
             <RefreshCw size={18} />
           )}
           {scanning
-            ? (i18n.language === 'zh' ? '扫描中...' : 'Scanning...')
-            : (i18n.language === 'zh' ? '立即扫描' : 'Scan Now')}
+            ? t('scanning')
+            : t('scanNow')}
         </button>
       </div>
 
@@ -124,12 +122,12 @@ const Security = () => {
           <div className="card-body items-center text-center py-4">
             <StatusIcon size={40} className={`${overallStatus.color} mb-1`} />
             <h3 className="font-semibold text-sm">
-              {i18n.language === 'zh' ? '系统状态' : 'System Status'}
+              {t('systemStatus')}
             </h3>
             <p className={`${overallStatus.color} font-medium`}>{overallStatus.text}</p>
             {lastScan && (
               <p className="text-xs text-base-content/50">
-                {i18n.language === 'zh' ? '上次扫描' : 'Last scan'}: {lastScan.toLocaleTimeString()}
+                {t('lastScan')}: {lastScan.toLocaleTimeString()}
               </p>
             )}
           </div>
@@ -165,11 +163,11 @@ const Security = () => {
           <div className="card-body items-center text-center py-4">
             <ShieldAlert size={40} className="text-error mb-1" />
             <h3 className="font-semibold text-sm">
-              {i18n.language === 'zh' ? '发现问题' : 'Issues Found'}
+              {t('issuesFound')}
             </h3>
             <p className="text-2xl font-bold text-error">{totalIssues}</p>
             <p className="text-xs text-base-content/50">
-              {criticalCount > 0 && <span className="text-error">{criticalCount} {i18n.language === 'zh' ? '严重' : 'critical'}</span>}
+              {criticalCount > 0 && <span className="text-error">{criticalCount} {t('critical')}</span>}
             </p>
           </div>
         </div>
@@ -210,17 +208,17 @@ const Security = () => {
       <div className="card bg-base-100 shadow-sm border border-base-200">
         <div className="card-body">
           <h3 className="card-title mb-4">
-            {i18n.language === 'zh' ? '扫描结果' : 'Scan Results'}
+            {t('scanResults')}
           </h3>
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
                 <tr>
                   <th>Skill</th>
-                  <th>{i18n.language === 'zh' ? '评分' : 'Score'}</th>
-                  <th>{i18n.language === 'zh' ? '风险等级' : 'Risk Level'}</th>
-                  <th>{i18n.language === 'zh' ? '问题数' : 'Issues'}</th>
-                  <th>{i18n.language === 'zh' ? '操作' : 'Actions'}</th>
+                  <th>{t('score')}</th>
+                  <th>{t('riskLevel')}</th>
+                  <th>{t('issues')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -247,7 +245,7 @@ const Security = () => {
                           getLevelBadge(report.level)
                         ) : (
                           <span className="badge badge-ghost badge-sm">
-                            {i18n.language === 'zh' ? '未扫描' : 'Not scanned'}
+                            {t('notScanned')}
                           </span>
                         )}
                       </td>
@@ -266,7 +264,7 @@ const Security = () => {
                             className="btn btn-xs btn-ghost"
                             onClick={() => setSelectedReport(report)}
                           >
-                            {i18n.language === 'zh' ? '查看报告' : 'View Report'}
+                            {t('viewReport')}
                           </button>
                         )}
                       </td>
@@ -276,7 +274,7 @@ const Security = () => {
                 {installedSkills.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center text-base-content/50 py-8">
-                      {i18n.language === 'zh' ? '暂无已安装的 Skills' : 'No installed skills'}
+                      {t('noSkillsInstalled')}
                     </td>
                   </tr>
                 )}
