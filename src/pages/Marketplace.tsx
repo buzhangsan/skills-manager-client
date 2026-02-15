@@ -72,10 +72,10 @@ const Marketplace = () => {
 
   const getPhaseMessage = (phase: InstallPhase, skillName: string): string => {
     const messages = {
-      downloading: i18n.language === 'zh' ? `正在下载 ${skillName}...` : `Downloading ${skillName}...`,
-      installing: i18n.language === 'zh' ? `正在安装 ${skillName}...` : `Installing ${skillName}...`,
-      scanning: i18n.language === 'zh' ? `正在进行安全扫描...` : `Running security scan...`,
-      done: i18n.language === 'zh' ? `${skillName} 安装完成！` : `${skillName} installed successfully!`,
+      downloading: t('downloadingSkill', { name: skillName }),
+      installing: t('installingSkill', { name: skillName }),
+      scanning: t('scanningSkill'),
+      done: t('installSuccess', { name: skillName }),
       idle: ''
     };
     return messages[phase];
@@ -120,8 +120,8 @@ const Marketplace = () => {
           show: true,
           phase: 'done',
           message: isRisky
-            ? (i18n.language === 'zh' ? `${skill.name} 已安装，但发现安全风险！` : `${skill.name} installed, but security risks found!`)
-            : (i18n.language === 'zh' ? `${skill.name} 安装成功，安全评分: ${report.score}` : `${skill.name} installed successfully, security score: ${report.score}`),
+            ? t('installSuccessRisky', { name: skill.name })
+            : t('installSuccessScore', { name: skill.name, score: report.score }),
           type: isRisky ? 'warning' : 'success',
           securityReport: report
         });
@@ -151,7 +151,7 @@ const Marketplace = () => {
       setInstallStatus({
         show: true,
         phase: 'done',
-        message: i18n.language === 'zh' ? `安装失败: ${errorMessage}` : `Installation failed: ${errorMessage}`,
+        message: t('installError', { error: errorMessage }),
         type: 'error'
       });
       setTimeout(() => setInstallStatus({ show: false, phase: 'idle', message: '', type: 'info' }), 5000);
@@ -170,9 +170,7 @@ const Marketplace = () => {
     setInstallStatus({
       show: true,
       phase: 'installing',
-      message: i18n.language === 'zh'
-        ? `正在批量安装 ${skillsToInstall.length} 个 Skills...`
-        : `Batch installing ${skillsToInstall.length} Skills...`,
+      message: t('installingCount', { count: skillsToInstall.length }),
       type: 'info'
     });
 
@@ -193,9 +191,10 @@ const Marketplace = () => {
       setInstallStatus({
         show: true,
         phase: 'done',
-        message: i18n.language === 'zh'
-          ? `批量安装完成: ${successCount} 成功${failCount > 0 ? `, ${failCount} 失败` : ''}`
-          : `Batch install complete: ${successCount} succeeded${failCount > 0 ? `, ${failCount} failed` : ''}`,
+        message: t('batchInstallComplete', { 
+          success: successCount, 
+          failText: failCount > 0 ? `, ${failCount} ${t('failed')}` : '' 
+        }),
         type: failCount > 0 ? 'warning' : 'success'
       });
 
@@ -207,7 +206,7 @@ const Marketplace = () => {
       setInstallStatus({
         show: true,
         phase: 'done',
-        message: i18n.language === 'zh' ? `批量安装失败: ${error.message}` : `Batch install failed: ${error.message}`,
+        message: t('batchInstallFailed', { error: error.message }),
         type: 'error'
       });
       setTimeout(() => setInstallStatus({ show: false, phase: 'idle', message: '', type: 'info' }), 5000);
@@ -221,9 +220,7 @@ const Marketplace = () => {
         await invoke('open_url', { url });
     } catch (error) {
         console.error('Failed to open URL:', error);
-        alert(i18n.language === 'zh'
-            ? `无法打开链接: ${error}`
-            : `Failed to open URL: ${error}`);
+        alert(t('openUrlError', { error }));
     }
   };
 
@@ -314,23 +311,19 @@ const Marketplace = () => {
                 {installStatus.securityReport && installStatus.phase === 'done' && (
                   <div className="mt-2 text-sm">
                     <div className="flex items-center gap-2 mb-1">
-                      <span>{i18n.language === 'zh' ? '安全评分:' : 'Security Score:'}</span>
+                      <span>{t('securityScoreLabel')}</span>
                       <span className={`font-bold ${getScoreColor(installStatus.securityReport.score)}`}>
                         {installStatus.securityReport.score}/100
                       </span>
                     </div>
                     {installStatus.securityReport.issues.length > 0 && (
                       <p className="opacity-80">
-                        {i18n.language === 'zh'
-                          ? `发现 ${installStatus.securityReport.issues.length} 个潜在问题`
-                          : `Found ${installStatus.securityReport.issues.length} potential issues`}
+                        {t('foundIssuesCount', { count: installStatus.securityReport.issues.length })}
                       </p>
                     )}
                     {installStatus.securityReport.blocked && (
                       <p className="text-error font-medium mt-1">
-                        {i18n.language === 'zh'
-                          ? '检测到严重安全风险！请在安全中心查看详情。'
-                          : 'Critical security risk detected! Check Security Center for details.'}
+                        {t('criticalRiskDetected')}
                       </p>
                     )}
                   </div>
@@ -360,16 +353,14 @@ const Marketplace = () => {
             <h2 className="text-3xl font-bold">{t('marketplace')}</h2>
           </div>
           <p className="text-base-content/60 text-lg">
-            {i18n.language === 'zh'
-              ? `发现并安装社区贡献的 AI Skills`
-              : `Discover and install community-contributed AI Skills`}
+            {t('marketplaceDesc')}
           </p>
           <div className="flex items-center gap-3 mt-2">
             <span className="stat-badge bg-primary/10 text-primary">
-              {marketplaceSkills.length} {i18n.language === 'zh' ? '个 Skills' : 'Skills'}
+              {t('marketplaceSkillsCount', { count: marketplaceSkills.length })}
             </span>
             <span className="stat-badge bg-success/10 text-success">
-              {installedSkills.length} {i18n.language === 'zh' ? '已安装' : 'Installed'}
+              {t('installedCount', { count: installedSkills.length })}
             </span>
             <span className="stat-badge bg-orange-500/10 text-orange-500">
               Claude Code
@@ -391,7 +382,7 @@ const Marketplace = () => {
             }}
           >
             {batchMode ? <CheckSquare size={14} /> : <Square size={14} />}
-            {i18n.language === 'zh' ? '批量模式' : 'Batch Mode'}
+            {t('batchMode')}
           </button>
 
           {/* Search */}
@@ -423,18 +414,16 @@ const Marketplace = () => {
                 selectAllBatch(uninstalledIds);
               }}
             >
-              {i18n.language === 'zh' ? '全选当前页' : 'Select All'}
+              {t('selectAll')}
             </button>
             <button
               className="btn btn-xs btn-ghost rounded-lg hover:bg-white/10"
               onClick={clearBatchSelect}
             >
-              {i18n.language === 'zh' ? '清除选择' : 'Clear'}
+              {t('clear')}
             </button>
             <span className="text-sm font-medium text-base-content/70">
-              {i18n.language === 'zh'
-                ? `已选择 ${batchSelectedSkills.length} 个`
-                : `${batchSelectedSkills.length} selected`}
+              {t('selected', { count: batchSelectedSkills.length })}
             </span>
           </div>
           <button
@@ -445,14 +434,12 @@ const Marketplace = () => {
             {isBatchInstalling ? (
               <>
                 <span className="loading loading-spinner loading-xs" />
-                {i18n.language === 'zh' ? '安装中...' : 'Installing...'}
+                {t('installing')}
               </>
             ) : (
               <>
                 <Download size={16} />
-                {i18n.language === 'zh'
-                  ? `安装 ${batchSelectedSkills.length} 个到 Claude Code`
-                  : `Install ${batchSelectedSkills.length} to Claude Code`}
+                {t('installToProject', { count: batchSelectedSkills.length })}
               </>
             )}
           </button>
@@ -462,7 +449,7 @@ const Marketplace = () => {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <span className="loading loading-spinner loading-lg text-primary"></span>
-          <p className="text-base-content/60">{i18n.language === 'zh' ? '正在加载 Skills...' : 'Loading Skills...'}</p>
+          <p className="text-base-content/60">{t('loadingSkills')}</p>
         </div>
       )}
 
@@ -530,7 +517,7 @@ const Marketplace = () => {
                         className="btn btn-ghost btn-sm gap-1.5 text-base-content/50 hover:text-base-content rounded-lg"
                       >
                         <ExternalLink size={14} />
-                        {i18n.language === 'zh' ? '源码' : 'Source'}
+                        {t('source')}
                       </button>
 
                       {installed ? (
@@ -541,8 +528,8 @@ const Marketplace = () => {
                       ) : batchMode ? (
                         <span className="text-xs text-base-content/50 font-medium">
                           {isSelected
-                            ? (i18n.language === 'zh' ? '已选中' : 'Selected')
-                            : (i18n.language === 'zh' ? '点击选择' : 'Click to select')}
+                            ? t('selected')
+                            : t('clickToSelect')}
                         </span>
                       ) : (
                         <button
@@ -557,8 +544,8 @@ const Marketplace = () => {
                             <>
                               <span className="loading loading-spinner loading-xs"></span>
                               {installStatus.phase === 'scanning'
-                                ? (i18n.language === 'zh' ? '扫描中' : 'Scanning')
-                                : (i18n.language === 'zh' ? '安装中' : 'Installing')}
+                                ? t('scanning')
+                                : t('installing')}
                             </>
                           ) : (
                             <>

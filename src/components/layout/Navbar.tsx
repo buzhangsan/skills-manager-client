@@ -89,7 +89,7 @@ function Navbar() {
                         <button
                             onClick={toggleLanguage}
                             className="w-10 h-10 rounded-full bg-gray-100 dark:bg-base-200 hover:bg-gray-200 dark:hover:bg-base-100 flex items-center justify-center transition-colors"
-                            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+                            title={t('language')}
                         >
                             <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                                 {i18n.language === 'zh' ? 'EN' : '中'}
@@ -100,7 +100,7 @@ function Navbar() {
                         <button
                             onClick={toggleTheme}
                             className="w-10 h-10 rounded-full bg-gray-100 dark:bg-base-200 hover:bg-gray-200 dark:hover:bg-base-100 flex items-center justify-center transition-colors"
-                            title={theme === 'light' ? t('dark') : t('light')}
+                            title={t('theme')}
                         >
                             {theme === 'light' ? (
                                 <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />

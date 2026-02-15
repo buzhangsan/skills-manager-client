@@ -18,26 +18,18 @@ const StatCard = ({ title, value, icon: Icon, color, desc }: any) => (
 );
 
 const Dashboard = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { scanLocalSkills, installedSkills } = useSkillStore();
 
   // 根据语言切换图表数据
-  const data = i18n.language === 'zh' ? [
-    { name: '周一', usage: 40 },
-    { name: '周二', usage: 30 },
-    { name: '周三', usage: 20 },
-    { name: '周四', usage: 27 },
-    { name: '周五', usage: 18 },
-    { name: '周六', usage: 23 },
-    { name: '周日', usage: 34 },
-  ] : [
-    { name: 'Mon', usage: 40 },
-    { name: 'Tue', usage: 30 },
-    { name: 'Wed', usage: 20 },
-    { name: 'Thu', usage: 27 },
-    { name: 'Fri', usage: 18 },
-    { name: 'Sat', usage: 23 },
-    { name: 'Sun', usage: 34 },
+  const data = [
+    { name: t('mon'), usage: 40 },
+    { name: t('tue'), usage: 30 },
+    { name: t('wed'), usage: 20 },
+    { name: t('thu'), usage: 27 },
+    { name: t('fri'), usage: 18 },
+    { name: t('sat'), usage: 23 },
+    { name: t('sun'), usage: 34 },
   ];
 
   useEffect(() => {
@@ -110,40 +102,40 @@ const Dashboard = () => {
             <li className="step step-primary">
                 <div className="text-left ml-2">
                     <p className="font-medium">
-                      {i18n.language === 'zh' ? '安装了 "Git Commander"' : 'Installed "Git Commander"'}
+                      {t('installedActivity', { name: 'Git Commander' })}
                     </p>
                     <p className="text-xs text-base-content/60">
-                      {i18n.language === 'zh' ? '2 分钟前' : '2 minutes ago'}
+                      {t('minutesAgo', { count: 2 })}
                     </p>
                 </div>
             </li>
             <li className="step step-primary">
                 <div className="text-left ml-2">
                     <p className="font-medium">
-                      {i18n.language === 'zh' ? '更新了 "Web Search"' : 'Updated "Web Search"'}
+                      {t('updatedActivity', { name: 'Web Search' })}
                     </p>
                     <p className="text-xs text-base-content/60">
-                      {i18n.language === 'zh' ? '2 小时前' : '2 hours ago'}
+                      {t('hoursAgo', { count: 2 })}
                     </p>
                 </div>
             </li>
             <li className="step">
                 <div className="text-left ml-2">
                     <p className="font-medium">
-                      {i18n.language === 'zh' ? '完成安全扫描' : 'Security scan completed'}
+                      {t('securityScanActivity')}
                     </p>
                     <p className="text-xs text-base-content/60">
-                      {i18n.language === 'zh' ? '昨天' : 'Yesterday'}
+                      {t('yesterday')}
                     </p>
                 </div>
             </li>
             <li className="step">
                 <div className="text-left ml-2">
                     <p className="font-medium">
-                      {i18n.language === 'zh' ? '系统自动更新' : 'System auto-update'}
+                      {t('systemUpdateActivity')}
                     </p>
                     <p className="text-xs text-base-content/60">
-                      {i18n.language === 'zh' ? '3 天前' : '3 days ago'}
+                      {t('daysAgo', { count: 3 })}
                     </p>
                 </div>
             </li>

@@ -147,28 +147,47 @@ const MySkills = () => {
       setSkillContent(content);
     } catch (error) {
       console.error('Failed to load skill content:', error);
-      setSkillContent(`# ${skill.name}\n\n${skill.description}\n\n**${i18n.language === 'zh' ? '版本' : 'Version'}**: ${skill.version}\n**${i18n.language === 'zh' ? '作者' : 'Author'}**: ${skill.author}\n\n**${i18n.language === 'zh' ? '路径' : 'Path'}**: ${skill.localPath}`);
+      setSkillContent(`# ${skill.name}\n\n${skill.description}\n\n**${t('version')}**: ${skill.version}\n**${t('author')}**: ${skill.author}\n\n**${t('path')}**: ${skill.localPath}`);
     }
   };
 
   const handleImport = async () => {
+    if (isImporting) return;
+    
     setIsImporting(true);
     try {
       if (importType === 'github') {
+        if (!importUrl.trim()) throw new Error(t('enterGithubUrl'));
         await importFromGithub(importUrl);
-        alert(i18n.language === 'zh' ? '成功从 GitHub 导入 Skill！' : 'Successfully imported from GitHub!');
+        setDeleteResult({
+          show: true, 
+          success: true, 
+          message: t('importSuccessGitHub')
+        });
       } else if (importType === 'local') {
+        if (!importPath.trim()) throw new Error(t('enterLocalPath'));
         await importFromLocal(importPath);
-        alert(i18n.language === 'zh' ? '成功从本地导入 Skill！' : 'Successfully imported from local!');
+        setDeleteResult({
+          show: true, 
+          success: true, 
+          message: t('importSuccessLocal')
+        });
       }
+      
       setShowImportModal(false);
       setImportUrl('');
       setImportPath('');
       setImportType(null);
     } catch (error: any) {
-      alert(`${i18n.language === 'zh' ? '导入失败' : 'Import failed'}: ${error.message}`);
+      console.error('[UI] Import failed:', error);
+      setDeleteResult({
+        show: true, 
+        success: false, 
+        message: `${t('importError')}: ${error.message || error}`
+      });
     } finally {
       setIsImporting(false);
+      setTimeout(() => setDeleteResult((prev: any) => ({ ...prev, show: false })), 3000);
     }
   };
 
