@@ -375,53 +375,61 @@ export const useSkillStore = create<SkillStore>()(
           finalInstallPath = projectPaths[selectedProjectIndex] || projectPaths[0];
         }
 
-        const result: any = await invoke('import_github_skill', {
-          request: {
-            repoUrl: url,
-            installPath: finalInstallPath,
-            skipSecurityCheck: false
-          }
-        });
+        console.log(`[Store] Importing from GitHub: ${url}, installPath: ${finalInstallPath || 'default'}`);
 
-        if (!result.success) {
-          throw new Error(result.message || 'Import failed');
-        }
-
-        // 重新扫描
-        await get().scanLocalSkills();
-
-        // 安装后立即进行安全扫描
-        set({ isScanning: true });
         try {
-          const skillName = url.split('/').pop()?.replace('.git', '') || 'unknown';
-          const installedSkill = get().installedSkills.find(s =>
-            s.name === skillName || s.localPath?.includes(skillName)
-          );
+          const result: any = await invoke('import_github_skill', {
+            request: {
+              repoUrl: url,
+              installPath: finalInstallPath,
+              skipSecurityCheck: false
+            }
+          });
 
-          if (installedSkill?.localPath) {
-            const securityReport = await get().scanSkillSecurity(
-              installedSkill.localPath,
-              installedSkill.name
+          if (!result.success) {
+            console.error('[Store] Import failed:', result.message);
+            throw new Error(result.message || 'Import failed');
+          }
+
+          // 重新扫描
+          await get().scanLocalSkills();
+
+          // 安装后立即进行安全扫描
+          set({ isScanning: true });
+          try {
+            const skillName = url.split('/').pop()?.replace('.git', '') || 'unknown';
+            const installedSkill = get().installedSkills.find(s =>
+              s.name === skillName || s.localPath?.includes(skillName)
             );
 
-            return {
-              success: true,
-              message: result.message,
-              blocked: securityReport.blocked,
-              securityReport
-            };
-          }
-        } catch (scanError) {
-          console.error('Post-install security scan failed:', scanError);
-        } finally {
-          set({ isScanning: false });
-        }
+            if (installedSkill?.localPath) {
+              const securityReport = await get().scanSkillSecurity(
+                installedSkill.localPath,
+                installedSkill.name
+              );
 
-        return {
-          success: true,
-          message: result.message,
-          blocked: false
-        };
+              return {
+                success: true,
+                message: result.message,
+                blocked: securityReport.blocked,
+                securityReport
+              };
+            }
+          } catch (scanError) {
+            console.error('[Store] Post-install security scan failed:', scanError);
+          } finally {
+            set({ isScanning: false });
+          }
+
+          return {
+            success: true,
+            message: result.message,
+            blocked: false
+          };
+        } catch (error) {
+          console.error('[Store] importFromGithub error:', error);
+          throw error;
+        }
       },
 
       importFromLocal: async (sourcePath: string, installPath?: string) => {

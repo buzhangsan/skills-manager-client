@@ -152,23 +152,42 @@ const MySkills = () => {
   };
 
   const handleImport = async () => {
+    if (isImporting) return;
+    
     setIsImporting(true);
     try {
       if (importType === 'github') {
+        if (!importUrl.trim()) throw new Error(i18n.language === 'zh' ? '请输入 GitHub 链接' : 'Please enter GitHub URL');
         await importFromGithub(importUrl);
-        alert(i18n.language === 'zh' ? '成功从 GitHub 导入 Skill！' : 'Successfully imported from GitHub!');
+        setDeleteResult({
+          show: true, 
+          success: true, 
+          message: i18n.language === 'zh' ? '成功从 GitHub 导入 Skill！' : 'Successfully imported from GitHub!'
+        });
       } else if (importType === 'local') {
+        if (!importPath.trim()) throw new Error(i18n.language === 'zh' ? '请输入本地路径' : 'Please enter local path');
         await importFromLocal(importPath);
-        alert(i18n.language === 'zh' ? '成功从本地导入 Skill！' : 'Successfully imported from local!');
+        setDeleteResult({
+          show: true, 
+          success: true, 
+          message: i18n.language === 'zh' ? '成功从本地导入 Skill！' : 'Successfully imported from local!'
+        });
       }
+      
       setShowImportModal(false);
       setImportUrl('');
       setImportPath('');
       setImportType(null);
     } catch (error: any) {
-      alert(`${i18n.language === 'zh' ? '导入失败' : 'Import failed'}: ${error.message}`);
+      console.error('[UI] Import failed:', error);
+      setDeleteResult({
+        show: true, 
+        success: false, 
+        message: `${i18n.language === 'zh' ? '导入失败' : 'Import failed'}: ${error.message || error}`
+      });
     } finally {
       setIsImporting(false);
+      setTimeout(() => setDeleteResult((prev: any) => ({ ...prev, show: false })), 3000);
     }
   };
 
